@@ -97,7 +97,7 @@ func load_gaussians(path: String):
 	multi_mesh.mesh.material.set_shader_parameter("rot_sampler", rot_texture)
 	#multi_mesh.mesh.material.set_shader_parameter("n_splats", n_splats)
 	multi_mesh.mesh.material.set_shader_parameter("n_splats", n_splats)
-	multi_mesh.mesh.material.set_shader_parameter("modifier", 1.0)
+	multi_mesh.mesh.material.set_shader_parameter("modifier", 0.1)
 	
 	var tan_fovy = tan(deg_to_rad(main_camera.fov) * 0.5)
 	var tan_fovx = tan_fovy * get_viewport().size.x / get_viewport().size.y

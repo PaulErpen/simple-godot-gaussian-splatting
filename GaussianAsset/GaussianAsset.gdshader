@@ -1,4 +1,5 @@
 shader_type spatial;
+render_mode unshaded, depth_draw_never;
 
 // splat data
 uniform sampler2D means_sampler;
@@ -137,7 +138,7 @@ void vertex() {
 			vec2 corner = vec2(float((VERTEX_ID << 1) & 2), float(VERTEX_ID & 2)) - 1.;
 			vec2 screen_pos = point_image + radius_px * corner;
 			vUv = point_image - screen_pos;
-			POSITION = vec4(screen_pos / viewport_size * 2.0 - 1.0, ndc.z, 1);
+			POSITION = vec4(screen_pos / viewport_size * 2.0 - 1.0, 0.0, 1);
 			//POSITION = PROJECTION_MATRIX * VIEW_MATRIX * vec4(VERTEX, 1.0);
 		}
 	}

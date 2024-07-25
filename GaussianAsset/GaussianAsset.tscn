@@ -28,4 +28,5 @@ mesh = SubResource("PlaneMesh_f1h7x")
 script = ExtResource("1_ttjwb")
 
 [node name="MultiMeshInstance3D" type="MultiMeshInstance3D" parent="."]
+transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, 0, 0, 0)
 multimesh = SubResource("MultiMesh_c80fy")
