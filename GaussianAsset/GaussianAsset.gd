@@ -59,7 +59,7 @@ func load_gaussians(path: String):
 			clamp(vertices_float[idx + property_indices["f_dc_0"]], 0.0, 1.0),
 			clamp(vertices_float[idx + property_indices["f_dc_1"]], 0.0, 1.0),
 			clamp(vertices_float[idx + property_indices["f_dc_2"]], 0.0, 1.0),
-			clamp(vertices_float[idx + property_indices["opacity"]], 0.0, 1.0),
+			vertices_float[idx + property_indices["opacity"]],
 		)
 		var scale = Vector3(
 			vertices_float[idx + property_indices["scale_0"]],
@@ -86,19 +86,16 @@ func load_gaussians(path: String):
 		multi_mesh.set_instance_color(i, color)
 		multi_mesh.set_instance_custom_data(i, color)
 		
-		if i > 30:
-			break
-		
 	#multi_mesh.visible_instance_count = n_splats
-	multi_mesh.visible_instance_count = 30
+	multi_mesh.visible_instance_count = n_splats
 	ply_file.close()
 	
 	data_texture = create_data_texture(vertices_float)
 	multi_mesh.mesh.material.set_shader_parameter("data", data_texture)
 	#multi_mesh.mesh.material.set_shader_parameter("n_splats", n_splats)
-	multi_mesh.mesh.material.set_shader_parameter("n_splats", 30)
+	multi_mesh.mesh.material.set_shader_parameter("n_splats", n_splats)
 	multi_mesh.mesh.material.set_shader_parameter("n_properties", n_texture_properties)
-	multi_mesh.mesh.material.set_shader_parameter("modifier", 1.0)
+	multi_mesh.mesh.material.set_shader_parameter("modifier", 0.1)
 	
 	var tan_fovy = tan(deg_to_rad(main_camera.fov) * 0.5)
 	var tan_fovx = tan_fovy * get_viewport().size.x / get_viewport().size.y
@@ -112,9 +109,9 @@ func load_gaussians(path: String):
 	
 
 func create_data_texture(vertices_float: PackedFloat32Array) -> ImageTexture:
-	var image = Image.create(30, n_texture_properties, false, Image.FORMAT_RGBAF)
+	var image = Image.create(n_splats, n_texture_properties, false, Image.FORMAT_RGBAF)
 	
-	for i in range(30):
+	for i in range(n_splats):
 		var idx = i * len(property_indices)
 		# mu/mean - 0
 		image.set_pixel(i, 0, Color(
