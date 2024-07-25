@@ -1,9 +1,10 @@
 shader_type spatial;
 
 // splat data
-uniform sampler2D data;
+uniform sampler2D means_sampler;
+uniform sampler2D scales_sampler;
+uniform sampler2D rot_sampler;
 uniform int n_splats;
-uniform int n_properties;
 
 // parameters
 uniform float modifier;
@@ -98,9 +99,9 @@ float sigmoid(float x) {
 
 void vertex() {
 	// retrieve data from texture
-	vec3 mu = texture(data, vec2(float(INSTANCE_ID) / float(n_splats), 0.0)).xyz;
-	vec3 scale = texture(data, vec2(float(INSTANCE_ID) / float(n_splats), 1.0 / float(n_properties))).xyz;
-	vec4 rot = texture(data, vec2(float(INSTANCE_ID) / float(n_splats), 2.0  / float(n_properties)));
+	vec3 mu = texelFetch(means_sampler, ivec2(INSTANCE_ID, 0), 0).xyz;
+	vec3 scale = texelFetch(scales_sampler, ivec2(INSTANCE_ID, 0), 0).xyz;
+	vec4 rot = texelFetch(rot_sampler, ivec2(INSTANCE_ID, 0), 0);
 	
 	//calculate clip space position and culling
 	vec4 clipSpace = PROJECTION_MATRIX * VIEW_MATRIX * vec4(mu, 1.0);
@@ -143,21 +144,21 @@ void vertex() {
 }
 
 void fragment() {
-	//vec2 d = vUv;
-	//vec3 conic = vConic;
-	//float power = -0.5 * (conic.x * d.x * d.x + conic.z * d.y * d.y) + conic.y * d.x * d.y;
-	//
-	//if (power > 0.0) {
-	//	discard;
-	//}
-//
-	//float alpha = min(0.99, opacity * exp(power));
-//
-	//if (alpha < 1.0/255.0) {
-	//	discard;
-	//}
+	vec2 d = vUv;
+	vec3 conic = vConic;
+	float power = -0.5 * (conic.x * d.x * d.x + conic.z * d.y * d.y) + conic.y * d.x * d.y;
+	
+	if (power > 0.0) {
+		discard;
+	}
+
+	float alpha = min(0.99, opacity * exp(power));
+
+	if (alpha < 1.0/255.0) {
+		discard;
+	}
 	ALBEDO = color.rgb;
-	//ALPHA = alpha;
+	ALPHA = alpha;
 }
 
 //void light() {

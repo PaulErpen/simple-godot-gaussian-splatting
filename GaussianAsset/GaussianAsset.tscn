@@ -7,7 +7,6 @@
 render_priority = 0
 shader = ExtResource("2_i5ity")
 shader_parameter/n_splats = null
-shader_parameter/n_properties = null
 shader_parameter/modifier = null
 shader_parameter/tan_fovx = null
 shader_parameter/tan_fovy = null
