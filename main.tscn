@@ -1,0 +1,38 @@
+[gd_scene load_steps=7 format=3 uid="uid://bm2ck853gt53r"]
+
+[ext_resource type="PackedScene" uid="uid://o8sqsmt28rbo" path="res://GaussianAsset/GaussianAsset.tscn" id="1_2yj05"]
+[ext_resource type="Script" path="res://Camera3D.gd" id="1_ubcp1"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_8an1y"]
+sky_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+ground_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+
+[sub_resource type="Sky" id="Sky_sjojc"]
+sky_material = SubResource("ProceduralSkyMaterial_8an1y")
+
+[sub_resource type="Environment" id="Environment_jes72"]
+background_mode = 2
+sky = SubResource("Sky_sjojc")
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_5ggwy"]
+
+[node name="Node3D" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_jes72")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 1, 2)
+script = ExtResource("1_ubcp1")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, 0)
+mesh = SubResource("CapsuleMesh_5ggwy")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.965926, -1.13133e-08, 0.258819, -0.258819, -4.2222e-08, 0.965926, 0, -1, -4.37114e-08, 4, 3.24336, 0)
+
+[node name="GaussianAsset" parent="." instance=ExtResource("1_2yj05")]
+ply_path = "res://lego.ply"
