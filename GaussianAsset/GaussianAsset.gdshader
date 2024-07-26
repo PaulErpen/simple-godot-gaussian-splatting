@@ -5,6 +5,7 @@ render_mode unshaded, depth_draw_never;
 uniform sampler2D means_sampler;
 uniform sampler2D scales_sampler;
 uniform sampler2D rot_sampler;
+uniform sampler2D depth_index_sampler;
 uniform int n_splats;
 
 // parameters
@@ -98,11 +99,23 @@ float sigmoid(float x) {
     }
 }
 
+int retrieve_depth_index(int instance_id) {
+	vec4 float_index = texelFetch(depth_index_sampler, ivec2(instance_id, 0), 0);
+    int r = int(float_index.r * 255.0);
+    int g = int(float_index.g * 255.0);
+    int b = int(float_index.b * 255.0);
+    int a = int(float_index.a * 255.0);
+    
+    return (r << 24) | (g << 16) | (b << 8) | a;
+}
+
 void vertex() {
+	//int index = retrieve_depth_index(INSTANCE_ID);
+	int index = retrieve_depth_index(INSTANCE_ID);
 	// retrieve data from texture
-	vec3 mu = texelFetch(means_sampler, ivec2(INSTANCE_ID, 0), 0).xyz;
-	vec3 scale = texelFetch(scales_sampler, ivec2(INSTANCE_ID, 0), 0).xyz;
-	vec4 rot = texelFetch(rot_sampler, ivec2(INSTANCE_ID, 0), 0);
+	vec3 mu = texelFetch(means_sampler, ivec2(index, 0), 0).xyz;
+	vec3 scale = texelFetch(scales_sampler, ivec2(index, 0), 0).xyz;
+	vec4 rot = texelFetch(rot_sampler, ivec2(index, 0), 0);
 	
 	//calculate clip space position and culling
 	vec4 clipSpace = PROJECTION_MATRIX * MODELVIEW_MATRIX * vec4(mu, 1.0);
@@ -132,6 +145,8 @@ void vertex() {
     		vec2 point_image = vec2(ndc2Pix(ndc.x, viewport_size.x), ndc2Pix(ndc.y, viewport_size.y));
 			
 			color = COLOR.rgb;
+			float idx_color = float(INSTANCE_ID) / float(n_splats);
+			color = vec3(idx_color, 1.0 - idx_color, 0.0);
 			opacity = sigmoid(COLOR.a);
 			vConic = conic;
 			

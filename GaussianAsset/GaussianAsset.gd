@@ -4,18 +4,34 @@ extends Node3D
 
 @onready var multi_mesh_instance = $MultiMeshInstance3D
 @onready var main_camera = get_viewport().get_camera_3d()
+@onready var last_direction = (main_camera.global_transform.origin - global_transform.origin).normalized()
 
 var n_splats: int = 0
 var property_indices = Dictionary()
 var means_texture: ImageTexture 
 var scales_texture: ImageTexture 
 var rot_texture: ImageTexture
+var depth_index_image: Image
+var depth_index_texture: ImageTexture
+var depth_index: Array[int] = []
 var depths: Array[float] = []
+var vertices_float: PackedFloat32Array
 
 func _ready():
 	if ply_path != null:
 		load_header(ply_path)
 		load_gaussians(ply_path)
+		
+
+func _process(delta):
+	var direction = (main_camera.global_transform.origin - global_transform.origin).normalized()
+	var angle = last_direction.dot(direction)
+	print(angle)
+	
+	# Only re-sort if camera has changed enough
+	if angle < 0.8:
+		sort_splats_by_depth()
+		last_direction = direction
 
 func load_header(path: String):
 	var ply_file = FileAccess.open(path, FileAccess.READ)
@@ -45,7 +61,7 @@ func load_gaussians(path: String):
 			break
 		current_line = ply_file.get_line()
 	
-	var vertices_float: PackedFloat32Array =  ply_file.get_buffer(n_splats * len(property_indices) * 4).to_float32_array()
+	vertices_float = ply_file.get_buffer(n_splats * len(property_indices) * 4).to_float32_array()
 
 	var multi_mesh = multi_mesh_instance.multimesh
 	multi_mesh.instance_count = n_splats
@@ -59,9 +75,8 @@ func load_gaussians(path: String):
 			clamp(vertices_float[idx + property_indices["f_dc_2"]], 0.0, 1.0),
 			vertices_float[idx + property_indices["opacity"]],
 		)
-		depths.append(
-			0
-		)
+		depth_index.append(i)
+		depths.append(0)
 		
 		multi_mesh.set_instance_transform(i, Transform3D())
 		multi_mesh.set_instance_color(i, color)
@@ -71,10 +86,10 @@ func load_gaussians(path: String):
 	ply_file.close()
 	
 	create_data_textures(vertices_float)
+	sort_splats_by_depth()
 	multi_mesh.mesh.material.set_shader_parameter("means_sampler", means_texture)
 	multi_mesh.mesh.material.set_shader_parameter("scales_sampler", scales_texture)
 	multi_mesh.mesh.material.set_shader_parameter("rot_sampler", rot_texture)
-	#multi_mesh.mesh.material.set_shader_parameter("n_splats", n_splats)
 	multi_mesh.mesh.material.set_shader_parameter("n_splats", n_splats)
 	multi_mesh.mesh.material.set_shader_parameter("modifier", 1.0)
 	
@@ -118,8 +133,53 @@ func create_data_textures(vertices_float: PackedFloat32Array):
 	rot_texture = ImageTexture.create_from_image(rot_image)
 
 func depth_to_cam(mu: Vector3) -> float:
-	return 0.0
+	# Get the object's model matrix (global transform)
+	var model_matrix = self.global_transform
 	
+	# Get the camera's view matrix (inverse of the camera's global transform)
+	var view_matrix = main_camera.get_camera_transform().affine_inverse()
+	
+	var rot = Basis(
+		Vector3(0, -1, 0),
+		Vector3(1, 0, 0),
+		Vector3(0, 0, -1),
+	)
+	
+	# Transform the point from object space to world space
+	var view_space = (view_matrix * (model_matrix * (rot * mu)))
+	var world_position = main_camera.get_camera_projection() * Vector4(view_space.x, view_space.y, view_space.z, 1.0)
+	
+	return world_position.z / world_position.w
+	
+func compute_all_depths():
+	for i in range(n_splats):
+		var idx = i * len(property_indices)
+		depths[i] = depth_to_cam(
+				Vector3(
+					vertices_float[idx + property_indices["x"]],
+					vertices_float[idx + property_indices["y"]],
+					vertices_float[idx + property_indices["z"]]
+				)
+			)
 
-func sort_by_depth():
-	var depths = []
+func reindex_by_depth():
+	depth_index.sort_custom(func(idx1, idx2): return depths[idx1] < depths[idx2])
+	
+func sort_splats_by_depth():
+	compute_all_depths()
+	reindex_by_depth()
+	compute_depth_index_texture()
+	multi_mesh_instance.multimesh.mesh.material.set_shader_parameter("depth_index_sampler", depth_index_texture)
+
+func compute_depth_index_texture():
+	if depth_index_image == null:
+		depth_index_image = Image.create(n_splats, 1, false, Image.FORMAT_RGBA8)
+	for i in range(n_splats):
+		var integer_value = depth_index[i]
+		var r = (integer_value >> 24) & 0xFF
+		var g = (integer_value >> 16) & 0xFF
+		var b = (integer_value >> 8) & 0xFF
+		var a = integer_value & 0xFF
+		
+		depth_index_image.set_pixel(i, 0, Color(r / 255.0, g / 255.0, b / 255.0, a / 255.0))
+	depth_index_texture = ImageTexture.create_from_image(depth_index_image)
