@@ -9,7 +9,8 @@ var n_splats: int = 0
 var property_indices = Dictionary()
 var means_texture: ImageTexture 
 var scales_texture: ImageTexture 
-var rot_texture: ImageTexture 
+var rot_texture: ImageTexture
+var depths: Array[float] = []
 
 func _ready():
 	if ply_path != null:
@@ -51,43 +52,21 @@ func load_gaussians(path: String):
 	
 	for i in range(n_splats):
 		var idx = i * len(property_indices)
-		var mu = Vector3(
-			vertices_float[idx + property_indices["x"]],
-			vertices_float[idx + property_indices["y"]],
-			vertices_float[idx + property_indices["z"]]
-		)
+		
 		var color = Color(
 			clamp(vertices_float[idx + property_indices["f_dc_0"]], 0.0, 1.0),
 			clamp(vertices_float[idx + property_indices["f_dc_1"]], 0.0, 1.0),
 			clamp(vertices_float[idx + property_indices["f_dc_2"]], 0.0, 1.0),
 			vertices_float[idx + property_indices["opacity"]],
 		)
-		var scale = Vector3(
-			vertices_float[idx + property_indices["scale_0"]],
-			vertices_float[idx + property_indices["scale_1"]],
-			vertices_float[idx + property_indices["scale_2"]]
+		depths.append(
+			0
 		)
 		
-		var gaussianTransform = Transform3D()
-		
-		gaussianTransform.basis = gaussianTransform.basis.scaled(scale * 0.001)
-		
-		gaussianTransform.basis = gaussianTransform.basis.rotated(
-			Vector3(
-				vertices_float[idx + property_indices["rot_0"]],
-				vertices_float[idx + property_indices["rot_1"]],
-				vertices_float[idx + property_indices["rot_2"]]
-			).normalized(),
-			vertices_float[idx + property_indices["rot_3"]]
-		)
-		
-		gaussianTransform.origin = mu
-		
-		multi_mesh.set_instance_transform(i, gaussianTransform)
+		multi_mesh.set_instance_transform(i, Transform3D())
 		multi_mesh.set_instance_color(i, color)
 		multi_mesh.set_instance_custom_data(i, color)
 		
-	#multi_mesh.visible_instance_count = n_splats
 	multi_mesh.visible_instance_count = n_splats
 	ply_file.close()
 	
@@ -136,4 +115,11 @@ func create_data_textures(vertices_float: PackedFloat32Array):
 	
 	means_texture = ImageTexture.create_from_image(means_image)
 	scales_texture = ImageTexture.create_from_image(scales_image) 
-	rot_texture = ImageTexture.create_from_image(rot_image) 
+	rot_texture = ImageTexture.create_from_image(rot_image)
+
+func depth_to_cam(mu: Vector3) -> float:
+	return 0.0
+	
+
+func sort_by_depth():
+	var depths = []

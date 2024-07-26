@@ -105,7 +105,7 @@ void vertex() {
 	vec4 rot = texelFetch(rot_sampler, ivec2(INSTANCE_ID, 0), 0);
 	
 	//calculate clip space position and culling
-	vec4 clipSpace = PROJECTION_MATRIX * VIEW_MATRIX * vec4(mu, 1.0);
+	vec4 clipSpace = PROJECTION_MATRIX * MODELVIEW_MATRIX * vec4(mu, 1.0);
     float clip = 1.2 * clipSpace.w;
     if (clipSpace.z < -clip || clipSpace.z > clip || clipSpace.x < -clip || clipSpace.x > clip || clipSpace.y < -clip || clipSpace.y > clip) {
         POSITION = vec4(0, 0, 2, 1);
@@ -115,7 +115,7 @@ void vertex() {
 		vec4 ndc = clipSpace / clipSpace.w;
 		
 		//conic of covariance calculation
-		vec3 cov2d = computeCov2D(mu, scale, rot, VIEW_MATRIX);
+		vec3 cov2d = computeCov2D(mu, scale, rot, MODELVIEW_MATRIX);
 		float det = cov2d.x * cov2d.z - cov2d.y * cov2d.y;
 	    if (det == 0.) {
 	        POSITION = vec4(0, 0, 2, 1);
