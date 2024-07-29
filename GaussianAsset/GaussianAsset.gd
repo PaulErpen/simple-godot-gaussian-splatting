@@ -41,7 +41,8 @@ func _process(delta):
 
 # Thread must be disposed (or "joined"), for portability.
 func _exit_tree():
-	sort_thread.wait_to_finish()
+	if sort_thread != null:
+		sort_thread.wait_to_finish()
 
 func load_header(path: String):
 	var ply_file = FileAccess.open(path, FileAccess.READ)
@@ -72,31 +73,24 @@ func load_gaussians(path: String):
 			break
 		current_line = ply_file.get_line()
 	
+	print("Loading vertices")
 	vertices_float = ply_file.get_buffer(n_splats * len(property_indices) * 4).to_float32_array()
 
 	var multi_mesh = multi_mesh_instance.multimesh
 	multi_mesh.instance_count = n_splats
 	
 	for i in range(n_splats):
-		var idx = i * len(property_indices)
-		
-		var color = Color(
-			clamp(vertices_float[idx + property_indices["f_dc_0"]], 0.0, 1.0),
-			clamp(vertices_float[idx + property_indices["f_dc_1"]], 0.0, 1.0),
-			clamp(vertices_float[idx + property_indices["f_dc_2"]], 0.0, 1.0),
-			vertices_float[idx + property_indices["opacity"]],
-		)
 		depth_index.append(i)
 		depths.append(0)
-		
 		multi_mesh.set_instance_transform(i, Transform3D())
-		multi_mesh.set_instance_color(i, color)
-		multi_mesh.set_instance_custom_data(i, color)
 		
 	multi_mesh.visible_instance_count = n_splats
 	ply_file.close()
 	
+	print("Creating textures")
+	
 	create_data_textures(vertices_float)
+	print("Sorting")
 	sort_splats_by_depth(get_model_view_matrix(), main_camera.get_camera_projection())
 	multi_mesh.mesh.material.set_shader_parameter("means_opa_sampler", means_opa_texture)
 	multi_mesh.mesh.material.set_shader_parameter("scales_sampler", scales_texture)
@@ -115,6 +109,7 @@ func load_gaussians(path: String):
 	multi_mesh.mesh.material.set_shader_parameter("focal_x", focal_y)
 	multi_mesh.mesh.material.set_shader_parameter("focal_y", focal_x)
 	multi_mesh.mesh.material.set_shader_parameter("viewport_size", get_viewport().size)
+	print("Finished Loading Gaussian Asset")
 
 func get_model_view_matrix() -> Transform3D:
 	var model_matrix = self.global_transform

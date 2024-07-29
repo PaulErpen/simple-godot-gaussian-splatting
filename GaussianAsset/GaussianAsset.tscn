@@ -22,8 +22,6 @@ size = Vector2(1, 1)
 
 [sub_resource type="MultiMesh" id="MultiMesh_c80fy"]
 transform_format = 1
-use_colors = true
-use_custom_data = true
 mesh = SubResource("PlaneMesh_f1h7x")
 
 [node name="GaussianAsset" type="Node3D"]
