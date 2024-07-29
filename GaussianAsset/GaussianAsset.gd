@@ -18,6 +18,7 @@ var depth_index: Array[int] = []
 var depths: Array[float] = []
 var vertices_float: PackedFloat32Array
 var sh_degree: int
+var sort_thread: Thread
 
 func _ready():
 	if ply_path != null:
@@ -31,8 +32,15 @@ func _process(delta):
 	
 	# Only re-sort if camera has changed enough
 	if angle < 0.8:
-		sort_splats_by_depth()
+		if sort_thread != null and sort_thread.is_alive():
+			sort_thread.wait_to_finish()
+		sort_thread = Thread.new()
+		sort_thread.start(sort_splats_by_depth)
 		last_direction = direction
+
+# Thread must be disposed (or "joined"), for portability.
+func _exit_tree():
+	sort_thread.wait_to_finish()
 
 func load_header(path: String):
 	var ply_file = FileAccess.open(path, FileAccess.READ)
