@@ -8,14 +8,16 @@ extends Node3D
 
 var n_splats: int = 0
 var property_indices = Dictionary()
-var means_texture: ImageTexture 
+var means_opa_texture: ImageTexture 
 var scales_texture: ImageTexture 
 var rot_texture: ImageTexture
+var sh_texture: ImageTexture
 var depth_index_image: Image
 var depth_index_texture: ImageTexture
 var depth_index: Array[int] = []
 var depths: Array[float] = []
 var vertices_float: PackedFloat32Array
+var sh_degree: int
 
 func _ready():
 	if ply_path != null:
@@ -26,7 +28,6 @@ func _ready():
 func _process(delta):
 	var direction = (main_camera.global_transform.origin - global_transform.origin).normalized()
 	var angle = last_direction.dot(direction)
-	print(angle)
 	
 	# Only re-sort if camera has changed enough
 	if angle < 0.8:
@@ -52,6 +53,7 @@ func load_header(path: String):
 
 	for i in range(properties.size()):
 		property_indices[properties[i]] = i
+	sh_degree = ((properties.size() - 14)  / 3) ** 0.5
 
 func load_gaussians(path: String):
 	var ply_file = FileAccess.open(path, FileAccess.READ)
@@ -87,11 +89,13 @@ func load_gaussians(path: String):
 	
 	create_data_textures(vertices_float)
 	sort_splats_by_depth()
-	multi_mesh.mesh.material.set_shader_parameter("means_sampler", means_texture)
+	multi_mesh.mesh.material.set_shader_parameter("means_opa_sampler", means_opa_texture)
 	multi_mesh.mesh.material.set_shader_parameter("scales_sampler", scales_texture)
 	multi_mesh.mesh.material.set_shader_parameter("rot_sampler", rot_texture)
+	multi_mesh.mesh.material.set_shader_parameter("sh_sampler", sh_texture)
 	multi_mesh.mesh.material.set_shader_parameter("n_splats", n_splats)
 	multi_mesh.mesh.material.set_shader_parameter("modifier", 1.0)
+	multi_mesh.mesh.material.set_shader_parameter("shade_depth_texture", false)
 	
 	var tan_fovy = tan(deg_to_rad(main_camera.fov) * 0.5)
 	var tan_fovx = tan_fovy * get_viewport().size.x / get_viewport().size.y
@@ -105,16 +109,18 @@ func load_gaussians(path: String):
 	
 
 func create_data_textures(vertices_float: PackedFloat32Array):
-	var means_image = Image.create(n_splats, 1, false, Image.FORMAT_RGBAF)
+	var means_opa_image = Image.create(n_splats, 1, false, Image.FORMAT_RGBAF)
 	var scales_image = Image.create(n_splats, 1, false, Image.FORMAT_RGBAF)
 	var rot_image = Image.create(n_splats, 1, false, Image.FORMAT_RGBAF)
+	var sh_image = Image.create(n_splats, sh_degree ** 2, false, Image.FORMAT_RGBAF)
 	
 	for i in range(n_splats):
 		var idx = i * len(property_indices)
-		means_image.set_pixel(i, 0, Color(
+		means_opa_image.set_pixel(i, 0, Color(
 			vertices_float[idx + property_indices["x"]],
 			vertices_float[idx + property_indices["y"]],
-			vertices_float[idx + property_indices["z"]]
+			vertices_float[idx + property_indices["z"]],
+			vertices_float[idx + property_indices["opacity"]]
 		))
 		scales_image.set_pixel(i, 0, Color(
 			vertices_float[idx + property_indices["scale_0"]],
@@ -127,10 +133,27 @@ func create_data_textures(vertices_float: PackedFloat32Array):
 			vertices_float[idx + property_indices["rot_2"]],
 			vertices_float[idx + property_indices["rot_3"]]
 		))
+		
+		# spherical harmonics		
+		sh_image.set_pixel(i, 0, Color(
+			vertices_float[idx + property_indices["f_dc_0"]],
+			vertices_float[idx + property_indices["f_dc_1"]],
+			vertices_float[idx + property_indices["f_dc_2"]]
+		))
+		var n_rest = (sh_degree ** 2) * 3 - 3
+		var tex_index = 1
+		for sh_index in range(3, n_rest, 3):
+			sh_image.set_pixel(i, tex_index, Color(
+				vertices_float[idx + property_indices["f_rest_" + str(sh_index)]],
+				vertices_float[idx + property_indices["f_rest_" + str(sh_index + 1)]],
+				vertices_float[idx + property_indices["f_rest_" + str(sh_index + 2)]]
+			))
+			tex_index += 1
 	
-	means_texture = ImageTexture.create_from_image(means_image)
+	means_opa_texture = ImageTexture.create_from_image(means_opa_image)
 	scales_texture = ImageTexture.create_from_image(scales_image) 
 	rot_texture = ImageTexture.create_from_image(rot_image)
+	sh_texture = ImageTexture.create_from_image(sh_image)
 
 func depth_to_cam(mu: Vector3) -> float:
 	# Get the object's model matrix (global transform)

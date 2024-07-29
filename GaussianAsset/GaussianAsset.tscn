@@ -7,12 +7,14 @@
 render_priority = 0
 shader = ExtResource("2_i5ity")
 shader_parameter/n_splats = null
+shader_parameter/sh_degree = null
 shader_parameter/modifier = null
 shader_parameter/tan_fovx = null
 shader_parameter/tan_fovy = null
 shader_parameter/focal_x = null
 shader_parameter/focal_y = null
 shader_parameter/viewport_size = null
+shader_parameter/shade_depth_texture = null
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_f1h7x"]
 material = SubResource("ShaderMaterial_qx8nk")

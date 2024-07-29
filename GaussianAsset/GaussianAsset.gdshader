@@ -2,11 +2,13 @@ shader_type spatial;
 render_mode unshaded, depth_draw_never;
 
 // splat data
-uniform sampler2D means_sampler;
+uniform sampler2D means_opa_sampler;
 uniform sampler2D scales_sampler;
 uniform sampler2D rot_sampler;
 uniform sampler2D depth_index_sampler;
+uniform sampler2D sh_sampler;
 uniform int n_splats;
+uniform int sh_degree;
 
 // parameters
 uniform float modifier;
@@ -15,12 +17,30 @@ uniform float tan_fovy;
 uniform float focal_x;
 uniform float focal_y;
 uniform vec2 viewport_size;
+uniform bool shade_depth_texture;
 
 //varyings
 varying vec3 color;
 varying float opacity;
 varying vec3 vConic;
 varying vec2 vUv;
+
+const float SH_C0 = 0.28209479177387814;
+const float SH_C1 = 0.4886025119029199;
+const float SH_C2[5] = float[5](
+	1.0925484305920792,
+	-1.0925484305920792, 
+	0.31539156525252005, 
+	-1.0925484305920792, 
+	0.5462742152960396);
+const float SH_C3[7] = float[7](
+	-0.5900435899266435f, 
+	2.890611442640554f, 
+	-0.4570457994644658f, 
+	0.3731763325901154f, 
+	-0.4570457994644658f, 
+	1.445305721320277f, 
+	-0.5900435899266435f);
 
 mat3 computeCov3D(vec3 scale, vec4 rot) {
 	mat3 S = mat3(
@@ -109,11 +129,81 @@ int retrieve_depth_index(int instance_id) {
     return (r << 24) | (g << 16) | (b << 8) | a;
 }
 
+vec3[16] retrieve_spherical_harmonics_coef(int index) {
+	vec3[16] sh_coefs = vec3[16];
+	
+	sh_coefs[0] = texelFetch(sh_sampler, ivec2(index, 0), 0).rgb;
+	
+	if (sh_degree > 0) {
+		sh_coefs[1] = texelFetch(sh_sampler, ivec2(index, 1), 0).rgb;
+		sh_coefs[2] = texelFetch(sh_sampler, ivec2(index, 2), 0).rgb;
+		sh_coefs[3] = texelFetch(sh_sampler, ivec2(index, 3), 0).rgb;
+		
+		if (sh_degree > 1) {
+			sh_coefs[4] = texelFetch(sh_sampler, ivec2(index, 4), 0).rgb;
+			sh_coefs[5] = texelFetch(sh_sampler, ivec2(index, 5), 0).rgb;
+			sh_coefs[6] = texelFetch(sh_sampler, ivec2(index, 6), 0).rgb;
+			sh_coefs[7] = texelFetch(sh_sampler, ivec2(index, 7), 0).rgb;
+			sh_coefs[8] = texelFetch(sh_sampler, ivec2(index, 8), 0).rgb;
+		}
+		
+		if (sh_degree > 2) {
+			sh_coefs[9] = texelFetch(sh_sampler, ivec2(index, 9), 0).rgb;
+			sh_coefs[10] = texelFetch(sh_sampler, ivec2(index, 10), 0).rgb;
+			sh_coefs[11] = texelFetch(sh_sampler, ivec2(index, 11), 0).rgb;
+			sh_coefs[12] = texelFetch(sh_sampler, ivec2(index, 12), 0).rgb;
+			sh_coefs[13] = texelFetch(sh_sampler, ivec2(index, 13), 0).rgb;
+			sh_coefs[14] = texelFetch(sh_sampler, ivec2(index, 14), 0).rgb;
+			sh_coefs[15] = texelFetch(sh_sampler, ivec2(index, 15), 0).rgb;
+		}
+	}
+	
+	return sh_coefs;
+}
+
+vec3 computeColorFromSH(int deg, vec3 pos, vec3 cam_pos, vec3 sh[16]) {
+	vec3 dir = normalize(pos - cam_pos);
+	vec3 result = SH_C0 * sh[0];
+	
+	if (deg > 0) {
+		float x = dir.x;
+		float y = dir.y;
+		float z = dir.z;
+		result = result - SH_C1 * y * sh[1] + SH_C1 * z * sh[2] - SH_C1 * x * sh[3];
+
+		if (deg > 1) {
+			float xx = x * x, yy = y * y, zz = z * z;
+			float xy = x * y, yz = y * z, xz = x * z;
+			result = result +
+				SH_C2[0] * xy * sh[4] +
+				SH_C2[1] * yz * sh[5] +
+				SH_C2[2] * (2.0f * zz - xx - yy) * sh[6] +
+				SH_C2[3] * xz * sh[7] +
+				SH_C2[4] * (xx - yy) * sh[8];
+
+			if (deg > 2) {
+				result = result +
+						SH_C3[0] * y * (3.0f * xx - yy) * sh[9] +
+						SH_C3[1] * xy * z * sh[10] +
+						SH_C3[2] * y * (4.0f * zz - xx - yy) * sh[11] +
+						SH_C3[3] * z * (2.0f * zz - 3.0f * xx - 3.0f * yy) * sh[12] +
+						SH_C3[4] * x * (4.0f * zz - xx - yy) * sh[13] +
+						SH_C3[5] * z * (xx - yy) * sh[14] +
+						SH_C3[6] * x * (xx - 3.0f * yy) * sh[15];
+			}
+		}
+	}
+	result += 0.5f;
+	return max(result, 0.0f);
+}
+
 void vertex() {
 	//int index = retrieve_depth_index(INSTANCE_ID);
 	int index = retrieve_depth_index(INSTANCE_ID);
 	// retrieve data from texture
-	vec3 mu = texelFetch(means_sampler, ivec2(index, 0), 0).xyz;
+	vec4 means_opa = texelFetch(means_opa_sampler, ivec2(index, 0), 0);
+	vec3 mu = means_opa.xyz;
+	opacity = sigmoid(means_opa.a);
 	vec3 scale = texelFetch(scales_sampler, ivec2(index, 0), 0).xyz;
 	vec4 rot = texelFetch(rot_sampler, ivec2(index, 0), 0);
 	
@@ -144,16 +234,20 @@ void vertex() {
 			// compute pixel in image space
     		vec2 point_image = vec2(ndc2Pix(ndc.x, viewport_size.x), ndc2Pix(ndc.y, viewport_size.y));
 			
-			color = COLOR.rgb;
-			float idx_color = float(INSTANCE_ID) / float(n_splats);
-			color = vec3(idx_color, 1.0 - idx_color, 0.0);
-			opacity = sigmoid(COLOR.a);
+			if (shade_depth_texture) {
+				float idx_color = float(INSTANCE_ID) / float(n_splats);
+				color = vec3(idx_color, 1.0 - idx_color, 0.0);
+			} else {
+				vec3[16] sh = retrieve_spherical_harmonics_coef(index);
+				color = computeColorFromSH(sh_degree, mu, vec3(VIEW_MATRIX[3].xyz), sh);  
+			}
+			
 			vConic = conic;
 			
 			vec2 corner = vec2(float((VERTEX_ID << 1) & 2), float(VERTEX_ID & 2)) - 1.;
 			vec2 screen_pos = point_image + radius_px * corner;
 			vUv = point_image - screen_pos;
-			POSITION = vec4(screen_pos / viewport_size * 2.0 - 1.0, 0.0, 1);
+			POSITION = vec4(screen_pos / viewport_size * 2.0 - 1.0, ndc.z, 1);
 			//POSITION = PROJECTION_MATRIX * VIEW_MATRIX * vec4(VERTEX, 1.0);
 		}
 	}
