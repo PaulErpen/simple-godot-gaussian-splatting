@@ -258,15 +258,15 @@ void fragment() {
 	vec3 conic = vConic;
 	float power = -0.5 * (conic.x * d.x * d.x + conic.z * d.y * d.y) + conic.y * d.x * d.y;
 	
-	if (power > 0.0) {
-		discard;
-	}
+	//if (power > 0.0) {
+	//	discard;
+	//}
 
 	float alpha = min(0.99, opacity * exp(power));
 
-	if (alpha < 1.0/255.0) {
-		discard;
-	}
+	//if (alpha < 1.0/255.0) {
+	//	discard;
+	//}
 	ALBEDO = color.rgb;
 	ALPHA = alpha;
 }
