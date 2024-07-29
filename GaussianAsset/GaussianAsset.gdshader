@@ -1,3 +1,4 @@
+// Adapted from: https://github.com/haztro/godot-gaussian-splatting/blob/main/shaders/splat.glsl
 shader_type spatial;
 render_mode unshaded, depth_draw_never;
 

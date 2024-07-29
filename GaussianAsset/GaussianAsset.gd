@@ -1,3 +1,4 @@
+# Adapted from: https://github.com/LightningStorm0/Godot-Gaussian-Splatting/blob/main/GaussianLoader.gd
 extends Node3D
 
 @export var ply_path: String
@@ -35,7 +36,7 @@ func _process(delta):
 		if sort_thread != null and sort_thread.is_alive():
 			sort_thread.wait_to_finish()
 		sort_thread = Thread.new()
-		sort_thread.start(sort_splats_by_depth)
+		sort_thread.start(sort_splats_by_depth.bind(get_model_view_matrix(), main_camera.get_camera_projection()))
 		last_direction = direction
 
 # Thread must be disposed (or "joined"), for portability.
@@ -96,7 +97,7 @@ func load_gaussians(path: String):
 	ply_file.close()
 	
 	create_data_textures(vertices_float)
-	sort_splats_by_depth()
+	sort_splats_by_depth(get_model_view_matrix(), main_camera.get_camera_projection())
 	multi_mesh.mesh.material.set_shader_parameter("means_opa_sampler", means_opa_texture)
 	multi_mesh.mesh.material.set_shader_parameter("scales_sampler", scales_texture)
 	multi_mesh.mesh.material.set_shader_parameter("rot_sampler", rot_texture)
@@ -114,7 +115,14 @@ func load_gaussians(path: String):
 	multi_mesh.mesh.material.set_shader_parameter("focal_x", focal_y)
 	multi_mesh.mesh.material.set_shader_parameter("focal_y", focal_x)
 	multi_mesh.mesh.material.set_shader_parameter("viewport_size", get_viewport().size)
+
+func get_model_view_matrix() -> Transform3D:
+	var model_matrix = self.global_transform
 	
+	# Get the camera's view matrix (inverse of the camera's global transform)
+	var view_matrix = main_camera.get_camera_transform().affine_inverse()
+	
+	return view_matrix * model_matrix
 
 func create_data_textures(vertices_float: PackedFloat32Array):
 	var means_opa_image = Image.create(n_splats, 1, false, Image.FORMAT_RGBAF)
@@ -163,41 +171,29 @@ func create_data_textures(vertices_float: PackedFloat32Array):
 	rot_texture = ImageTexture.create_from_image(rot_image)
 	sh_texture = ImageTexture.create_from_image(sh_image)
 
-func depth_to_cam(mu: Vector3) -> float:
-	# Get the object's model matrix (global transform)
-	var model_matrix = self.global_transform
-	
-	# Get the camera's view matrix (inverse of the camera's global transform)
-	var view_matrix = main_camera.get_camera_transform().affine_inverse()
-	
+func compute_all_depths(model_view_matrix: Transform3D, projection_matrix: Projection):
 	var rot = Basis(
 		Vector3(0, -1, 0),
 		Vector3(1, 0, 0),
 		Vector3(0, 0, -1),
 	)
-	
-	# Transform the point from object space to world space
-	var view_space = (view_matrix * (model_matrix * (rot * mu)))
-	var world_position = main_camera.get_camera_projection() * Vector4(view_space.x, view_space.y, view_space.z, 1.0)
-	
-	return world_position.z / world_position.w
-	
-func compute_all_depths():
 	for i in range(n_splats):
 		var idx = i * len(property_indices)
-		depths[i] = depth_to_cam(
-				Vector3(
-					vertices_float[idx + property_indices["x"]],
-					vertices_float[idx + property_indices["y"]],
-					vertices_float[idx + property_indices["z"]]
-				)
-			)
+		var mu = Vector3(
+			vertices_float[idx + property_indices["x"]],
+			vertices_float[idx + property_indices["y"]],
+			vertices_float[idx + property_indices["z"]]
+		)
+		var view_space = (model_view_matrix * (rot * mu))
+		var world_position = projection_matrix * Vector4(view_space.x, view_space.y, view_space.z, 1.0)
+		
+		depths[i] = world_position.z / world_position.w
 
 func reindex_by_depth():
 	depth_index.sort_custom(func(idx1, idx2): return depths[idx1] < depths[idx2])
 	
-func sort_splats_by_depth():
-	compute_all_depths()
+func sort_splats_by_depth(model_view_matrix: Transform3D, projection_matrix: Projection):
+	compute_all_depths(model_view_matrix, projection_matrix)
 	reindex_by_depth()
 	compute_depth_index_texture()
 	multi_mesh_instance.multimesh.mesh.material.set_shader_parameter("depth_index_sampler", depth_index_texture)
