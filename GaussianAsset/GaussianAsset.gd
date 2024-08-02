@@ -15,11 +15,14 @@ var rot_texture: ImageTexture
 var sh_texture: ImageTexture
 var depth_index_image: Image
 var depth_index_texture: ImageTexture
+var data_texture: ImageTexture
 var depth_index: Array[int] = []
 var depths: Array[float] = []
 var vertices_float: PackedFloat32Array
 var sh_degree: int
 var sort_thread: Thread
+var data_image: Image
+var vertices_bytes
 
 func _ready():
 	if ply_path != null:
@@ -74,8 +77,26 @@ func load_gaussians(path: String):
 		current_line = ply_file.get_line()
 	
 	print("Loading vertices")
-	vertices_float = ply_file.get_buffer(n_splats * len(property_indices) * 4).to_float32_array()
-
+	var data_size = n_splats * len(property_indices) * 4
+	vertices_bytes = ply_file.get_buffer(data_size)
+	vertices_float = vertices_bytes.to_float32_array()
+	var vertex_size = vertices_bytes.size()
+	data_image = Image.create_from_data(
+		len(property_indices),
+		n_splats,
+		false,
+		Image.FORMAT_RF,
+		vertices_bytes
+	)
+	data_texture = ImageTexture.create_from_image(data_image)
+	
+	for i in range(n_splats):
+		var idx = i * len(property_indices)
+		var size = data_image.get_size()
+		var pix = data_image.get_pixel(0, i).r
+		var vert = vertices_float[idx + 0]
+		assert(pix == vert)
+		
 	var multi_mesh = multi_mesh_instance.multimesh
 	multi_mesh.instance_count = n_splats
 	
@@ -83,18 +104,16 @@ func load_gaussians(path: String):
 		depth_index.append(i)
 		depths.append(0)
 		multi_mesh.set_instance_transform(i, Transform3D())
+	
+	for property in property_indices.keys():
+		multi_mesh.mesh.material.set_shader_parameter("idx_" + property, property_indices[property])
 		
 	multi_mesh.visible_instance_count = n_splats
 	ply_file.close()
 	
-	print("Creating textures")
-	
-	create_data_textures(vertices_float)
 	print("Sorting")
 	sort_splats_by_depth(get_model_view_matrix(), main_camera.get_camera_projection())
-	multi_mesh.mesh.material.set_shader_parameter("means_opa_sampler", means_opa_texture)
-	multi_mesh.mesh.material.set_shader_parameter("scales_sampler", scales_texture)
-	multi_mesh.mesh.material.set_shader_parameter("rot_sampler", rot_texture)
+	multi_mesh.mesh.material.set_shader_parameter("data_sampler", data_texture)
 	multi_mesh.mesh.material.set_shader_parameter("sh_sampler", sh_texture)
 	multi_mesh.mesh.material.set_shader_parameter("n_splats", n_splats)
 	multi_mesh.mesh.material.set_shader_parameter("modifier", 1.0)
@@ -118,53 +137,6 @@ func get_model_view_matrix() -> Transform3D:
 	var view_matrix = main_camera.get_camera_transform().affine_inverse()
 	
 	return view_matrix * model_matrix
-
-func create_data_textures(vertices_float: PackedFloat32Array):
-	var means_opa_image = Image.create(n_splats, 1, false, Image.FORMAT_RGBAF)
-	var scales_image = Image.create(n_splats, 1, false, Image.FORMAT_RGBAF)
-	var rot_image = Image.create(n_splats, 1, false, Image.FORMAT_RGBAF)
-	var sh_image = Image.create(n_splats, sh_degree ** 2, false, Image.FORMAT_RGBAF)
-	
-	for i in range(n_splats):
-		var idx = i * len(property_indices)
-		means_opa_image.set_pixel(i, 0, Color(
-			vertices_float[idx + property_indices["x"]],
-			vertices_float[idx + property_indices["y"]],
-			vertices_float[idx + property_indices["z"]],
-			vertices_float[idx + property_indices["opacity"]]
-		))
-		scales_image.set_pixel(i, 0, Color(
-			vertices_float[idx + property_indices["scale_0"]],
-			vertices_float[idx + property_indices["scale_1"]],
-			vertices_float[idx + property_indices["scale_2"]]
-		))
-		rot_image.set_pixel(i, 0, Color(
-			vertices_float[idx + property_indices["rot_0"]],
-			vertices_float[idx + property_indices["rot_1"]],
-			vertices_float[idx + property_indices["rot_2"]],
-			vertices_float[idx + property_indices["rot_3"]]
-		))
-		
-		# spherical harmonics		
-		sh_image.set_pixel(i, 0, Color(
-			vertices_float[idx + property_indices["f_dc_0"]],
-			vertices_float[idx + property_indices["f_dc_1"]],
-			vertices_float[idx + property_indices["f_dc_2"]]
-		))
-		var n_rest = (sh_degree ** 2) * 3 - 3
-		var tex_index = 1
-		for sh_index in range(3, n_rest, 3):
-			sh_image.set_pixel(i, tex_index, Color(
-				vertices_float[idx + property_indices["f_rest_" + str(sh_index)]],
-				vertices_float[idx + property_indices["f_rest_" + str(sh_index + 1)]],
-				vertices_float[idx + property_indices["f_rest_" + str(sh_index + 2)]]
-			))
-			tex_index += 1
-	
-	means_opa_texture = ImageTexture.create_from_image(means_opa_image)
-	scales_texture = ImageTexture.create_from_image(scales_image) 
-	rot_texture = ImageTexture.create_from_image(rot_image)
-	sh_texture = ImageTexture.create_from_image(sh_image)
 
 func compute_all_depths(model_view_matrix: Transform3D, projection_matrix: Projection):
 	var rot = Basis(

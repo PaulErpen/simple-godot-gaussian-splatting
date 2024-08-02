@@ -2,12 +2,73 @@
 shader_type spatial;
 render_mode unshaded, depth_draw_never;
 
+// property indices
+uniform int idx_x;
+uniform int idx_y;
+uniform int idx_z;
+uniform int idx_nx;
+uniform int idx_ny;
+uniform int idx_nz;
+uniform int idx_f_dc_0;
+uniform int idx_f_dc_1;
+uniform int idx_f_dc_2;
+uniform int idx_f_rest_0;
+uniform int idx_f_rest_1;
+uniform int idx_f_rest_2;
+uniform int idx_f_rest_3;
+uniform int idx_f_rest_4;
+uniform int idx_f_rest_5;
+uniform int idx_f_rest_6;
+uniform int idx_f_rest_7;
+uniform int idx_f_rest_8;
+uniform int idx_f_rest_9;
+uniform int idx_f_rest_10;
+uniform int idx_f_rest_11;
+uniform int idx_f_rest_12;
+uniform int idx_f_rest_13;
+uniform int idx_f_rest_14;
+uniform int idx_f_rest_15;
+uniform int idx_f_rest_16;
+uniform int idx_f_rest_17;
+uniform int idx_f_rest_18;
+uniform int idx_f_rest_19;
+uniform int idx_f_rest_20;
+uniform int idx_f_rest_21;
+uniform int idx_f_rest_22;
+uniform int idx_f_rest_23;
+uniform int idx_f_rest_24;
+uniform int idx_f_rest_25;
+uniform int idx_f_rest_26;
+uniform int idx_f_rest_27;
+uniform int idx_f_rest_28;
+uniform int idx_f_rest_29;
+uniform int idx_f_rest_30;
+uniform int idx_f_rest_31;
+uniform int idx_f_rest_32;
+uniform int idx_f_rest_33;
+uniform int idx_f_rest_34;
+uniform int idx_f_rest_35;
+uniform int idx_f_rest_36;
+uniform int idx_f_rest_37;
+uniform int idx_f_rest_38;
+uniform int idx_f_rest_39;
+uniform int idx_f_rest_40;
+uniform int idx_f_rest_41;
+uniform int idx_f_rest_42;
+uniform int idx_f_rest_43;
+uniform int idx_f_rest_44;
+uniform int idx_opacity;
+uniform int idx_scale_0;
+uniform int idx_scale_1;
+uniform int idx_scale_2;
+uniform int idx_rot_0;
+uniform int idx_rot_1;
+uniform int idx_rot_2;
+uniform int idx_rot_3;
+
 // splat data
-uniform sampler2D means_opa_sampler;
-uniform sampler2D scales_sampler;
-uniform sampler2D rot_sampler;
+uniform sampler2D data_sampler;
 uniform sampler2D depth_index_sampler;
-uniform sampler2D sh_sampler;
 uniform int n_splats;
 uniform int sh_degree;
 
@@ -133,29 +194,93 @@ int retrieve_depth_index(int instance_id) {
 vec3[16] retrieve_spherical_harmonics_coef(int index) {
 	vec3[16] sh_coefs = vec3[16];
 	
-	sh_coefs[0] = texelFetch(sh_sampler, ivec2(index, 0), 0).rgb;
+	sh_coefs[0] = vec3(
+		texelFetch(data_sampler, ivec2(idx_f_dc_0, index), 0).r,
+		texelFetch(data_sampler, ivec2(idx_f_dc_1, index), 0).r,
+		texelFetch(data_sampler, ivec2(idx_f_dc_2, index), 0).r
+	);
 	
 	if (sh_degree > 0) {
-		sh_coefs[1] = texelFetch(sh_sampler, ivec2(index, 1), 0).rgb;
-		sh_coefs[2] = texelFetch(sh_sampler, ivec2(index, 2), 0).rgb;
-		sh_coefs[3] = texelFetch(sh_sampler, ivec2(index, 3), 0).rgb;
+		sh_coefs[1] = vec3(
+			texelFetch(data_sampler, ivec2(idx_f_rest_0, index), 0).r,
+			texelFetch(data_sampler, ivec2(idx_f_rest_1, index), 0).r,
+			texelFetch(data_sampler, ivec2(idx_f_rest_2, index), 0).r
+		);
+		sh_coefs[2] = vec3(
+			texelFetch(data_sampler, ivec2(idx_f_rest_3, index), 0).r,
+			texelFetch(data_sampler, ivec2(idx_f_rest_4, index), 0).r,
+			texelFetch(data_sampler, ivec2(idx_f_rest_5, index), 0).r
+		);
+		sh_coefs[3] = vec3(
+			texelFetch(data_sampler, ivec2(idx_f_rest_6, index), 0).r,
+			texelFetch(data_sampler, ivec2(idx_f_rest_7, index), 0).r,
+			texelFetch(data_sampler, ivec2(idx_f_rest_8, index), 0).r
+		);
 		
 		if (sh_degree > 1) {
-			sh_coefs[4] = texelFetch(sh_sampler, ivec2(index, 4), 0).rgb;
-			sh_coefs[5] = texelFetch(sh_sampler, ivec2(index, 5), 0).rgb;
-			sh_coefs[6] = texelFetch(sh_sampler, ivec2(index, 6), 0).rgb;
-			sh_coefs[7] = texelFetch(sh_sampler, ivec2(index, 7), 0).rgb;
-			sh_coefs[8] = texelFetch(sh_sampler, ivec2(index, 8), 0).rgb;
+			sh_coefs[4] = vec3(
+				texelFetch(data_sampler, ivec2(idx_f_rest_9, index), 0).r,
+				texelFetch(data_sampler, ivec2(idx_f_rest_10, index), 0).r,
+				texelFetch(data_sampler, ivec2(idx_f_rest_11, index), 0).r
+			);
+			sh_coefs[5] = vec3(
+				texelFetch(data_sampler, ivec2(idx_f_rest_12, index), 0).r,
+				texelFetch(data_sampler, ivec2(idx_f_rest_13, index), 0).r,
+				texelFetch(data_sampler, ivec2(idx_f_rest_14, index), 0).r
+			);
+			sh_coefs[6] = vec3(
+				texelFetch(data_sampler, ivec2(idx_f_rest_15, index), 0).r,
+				texelFetch(data_sampler, ivec2(idx_f_rest_16, index), 0).r,
+				texelFetch(data_sampler, ivec2(idx_f_rest_17, index), 0).r
+			);
+			sh_coefs[7] = vec3(
+				texelFetch(data_sampler, ivec2(idx_f_rest_18, index), 0).r,
+				texelFetch(data_sampler, ivec2(idx_f_rest_19, index), 0).r,
+				texelFetch(data_sampler, ivec2(idx_f_rest_20, index), 0).r
+			);
+			sh_coefs[8] = vec3(
+				texelFetch(data_sampler, ivec2(idx_f_rest_21, index), 0).r,
+				texelFetch(data_sampler, ivec2(idx_f_rest_22, index), 0).r,
+				texelFetch(data_sampler, ivec2(idx_f_rest_23, index), 0).r
+			);
 		}
 		
 		if (sh_degree > 2) {
-			sh_coefs[9] = texelFetch(sh_sampler, ivec2(index, 9), 0).rgb;
-			sh_coefs[10] = texelFetch(sh_sampler, ivec2(index, 10), 0).rgb;
-			sh_coefs[11] = texelFetch(sh_sampler, ivec2(index, 11), 0).rgb;
-			sh_coefs[12] = texelFetch(sh_sampler, ivec2(index, 12), 0).rgb;
-			sh_coefs[13] = texelFetch(sh_sampler, ivec2(index, 13), 0).rgb;
-			sh_coefs[14] = texelFetch(sh_sampler, ivec2(index, 14), 0).rgb;
-			sh_coefs[15] = texelFetch(sh_sampler, ivec2(index, 15), 0).rgb;
+			sh_coefs[9] = vec3(
+				texelFetch(data_sampler, ivec2(idx_f_rest_24, index), 0).r,
+				texelFetch(data_sampler, ivec2(idx_f_rest_25, index), 0).r,
+				texelFetch(data_sampler, ivec2(idx_f_rest_26, index), 0).r
+			);
+			sh_coefs[10] = vec3(
+				texelFetch(data_sampler, ivec2(idx_f_rest_27, index), 0).r,
+				texelFetch(data_sampler, ivec2(idx_f_rest_28, index), 0).r,
+				texelFetch(data_sampler, ivec2(idx_f_rest_29, index), 0).r
+			);
+			sh_coefs[11] = vec3(
+				texelFetch(data_sampler, ivec2(idx_f_rest_30, index), 0).r,
+				texelFetch(data_sampler, ivec2(idx_f_rest_31, index), 0).r,
+				texelFetch(data_sampler, ivec2(idx_f_rest_32, index), 0).r
+			);
+			sh_coefs[12] = vec3(
+				texelFetch(data_sampler, ivec2(idx_f_rest_33, index), 0).r,
+				texelFetch(data_sampler, ivec2(idx_f_rest_34, index), 0).r,
+				texelFetch(data_sampler, ivec2(idx_f_rest_35, index), 0).r
+			);
+			sh_coefs[13] = vec3(
+				texelFetch(data_sampler, ivec2(idx_f_rest_36, index), 0).r,
+				texelFetch(data_sampler, ivec2(idx_f_rest_37, index), 0).r,
+				texelFetch(data_sampler, ivec2(idx_f_rest_38, index), 0).r
+			);
+			sh_coefs[14] = vec3(
+				texelFetch(data_sampler, ivec2(idx_f_rest_39, index), 0).r,
+				texelFetch(data_sampler, ivec2(idx_f_rest_40, index), 0).r,
+				texelFetch(data_sampler, ivec2(idx_f_rest_41, index), 0).r
+			);
+			sh_coefs[15] = vec3(
+				texelFetch(data_sampler, ivec2(idx_f_rest_42, index), 0).r,
+				texelFetch(data_sampler, ivec2(idx_f_rest_43, index), 0).r,
+				texelFetch(data_sampler, ivec2(idx_f_rest_44, index), 0).r
+			);
 		}
 	}
 	
@@ -202,11 +327,23 @@ void vertex() {
 	//int index = retrieve_depth_index(INSTANCE_ID);
 	int index = retrieve_depth_index(INSTANCE_ID);
 	// retrieve data from texture
-	vec4 means_opa = texelFetch(means_opa_sampler, ivec2(index, 0), 0);
-	vec3 mu = means_opa.xyz;
-	opacity = sigmoid(means_opa.a);
-	vec3 scale = texelFetch(scales_sampler, ivec2(index, 0), 0).xyz;
-	vec4 rot = texelFetch(rot_sampler, ivec2(index, 0), 0);
+	vec3 mu = vec3(
+		texelFetch(data_sampler, ivec2(idx_x, index), 0).r, 
+		texelFetch(data_sampler, ivec2(idx_y, index), 0).r, 
+		texelFetch(data_sampler, ivec2(idx_z, index), 0).r);
+	//vec3 mu = texelFetch(means_opa_sampler, ivec2(index, 0), 0).rgb;
+	opacity = sigmoid(texelFetch(data_sampler, ivec2(idx_opacity, index), 0).r);
+	vec3 scale = vec3(
+		texelFetch(data_sampler, ivec2(idx_scale_0, index), 0).r,
+		texelFetch(data_sampler, ivec2(idx_scale_1, index), 0).r,
+		texelFetch(data_sampler, ivec2(idx_scale_2, index), 0).r
+	);
+	vec4 rot = vec4(
+		texelFetch(data_sampler, ivec2(idx_rot_0, index), 0).r,
+		texelFetch(data_sampler, ivec2(idx_rot_1, index), 0).r,
+		texelFetch(data_sampler, ivec2(idx_rot_2, index), 0).r,
+		texelFetch(data_sampler, ivec2(idx_rot_3, index), 0).r
+	);
 	
 	//calculate clip space position and culling
 	vec4 clipSpace = PROJECTION_MATRIX * MODELVIEW_MATRIX * vec4(mu, 1.0);
