@@ -1,7 +1,9 @@
-[gd_scene load_steps=6 format=3 uid="uid://o8sqsmt28rbo"]
+[gd_scene load_steps=10 format=3 uid="uid://o8sqsmt28rbo"]
 
 [ext_resource type="Script" path="res://GaussianAsset/GaussianAsset.gd" id="1_ttjwb"]
 [ext_resource type="Shader" path="res://GaussianAsset/GaussianAsset.gdshader" id="2_i5ity"]
+[ext_resource type="Shader" path="res://GaussianAsset/AABB.gdshader" id="3_ckf5a"]
+[ext_resource type="Script" path="res://GaussianAsset/AABB.gd" id="3_kg4mk"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_qx8nk"]
 render_priority = 0
@@ -86,9 +88,20 @@ size = Vector2(1, 1)
 transform_format = 1
 mesh = SubResource("PlaneMesh_f1h7x")
 
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_bi8tn"]
+render_priority = 0
+shader = ExtResource("3_ckf5a")
+shader_parameter/wireframeColor = Vector3(1, 0, 0)
+
+[sub_resource type="BoxMesh" id="BoxMesh_jhsuf"]
+material = SubResource("ShaderMaterial_bi8tn")
+
 [node name="GaussianAsset" type="Node3D"]
 script = ExtResource("1_ttjwb")
 
 [node name="MultiMeshInstance3D" type="MultiMeshInstance3D" parent="."]
-transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, 0, 0, 0)
 multimesh = SubResource("MultiMesh_c80fy")
+
+[node name="AABB" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_jhsuf")
+script = ExtResource("3_kg4mk")

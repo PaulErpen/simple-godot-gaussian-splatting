@@ -1,7 +1,9 @@
 # Adapted from: https://github.com/LightningStorm0/Godot-Gaussian-Splatting/blob/main/GaussianLoader.gd
 extends Node3D
 
-@export var ply_path: String
+@export var ply_path: String = "res://lego.ply"
+#/home/paul//Downloads/models/bonsai/point_cloud/iteration_7000/point_cloud.ply
+@export var max_vertices: int = 500000
 
 @onready var multi_mesh_instance = $MultiMeshInstance3D
 @onready var main_camera = get_viewport().get_camera_3d()
@@ -53,7 +55,7 @@ func load_header(path: String):
 	var current_line = ply_file.get_line()
 	while true:
 		if current_line.begins_with("element vertex"):
-			n_splats = int(current_line.split(" ")[2])
+			n_splats = min(int(current_line.split(" ")[2]), max_vertices)
 			print("Number of splats: ", n_splats)
 		if current_line.begins_with("property float"):
 			properties.append(current_line.split(" ")[2])
@@ -89,21 +91,35 @@ func load_gaussians(path: String):
 		vertices_bytes
 	)
 	data_texture = ImageTexture.create_from_image(data_image)
-	
-	for i in range(n_splats):
-		var idx = i * len(property_indices)
-		var size = data_image.get_size()
-		var pix = data_image.get_pixel(0, i).r
-		var vert = vertices_float[idx + 0]
-		assert(pix == vert)
-		
+
 	var multi_mesh = multi_mesh_instance.multimesh
 	multi_mesh.instance_count = n_splats
 	
+	var aabb_position = Vector3.ZERO
+	var aabb_size = Vector3.ZERO
 	for i in range(n_splats):
+		var idx = i * len(property_indices)
+		var mu = Vector3(
+			vertices_float[idx + property_indices["x"]],
+			vertices_float[idx + property_indices["y"]],
+			vertices_float[idx + property_indices["z"]]
+		)
+		aabb_size = Vector3(
+			max(mu.x, aabb_size.x),
+			max(mu.y, aabb_size.y),
+			max(mu.z, aabb_size.z),
+		)
+		aabb_position = Vector3(
+			min(mu.x, aabb_position.x),
+			min(mu.y, aabb_position.y),
+			min(mu.z, aabb_position.z),
+		)
 		depth_index.append(i)
 		depths.append(0)
 		multi_mesh.set_instance_transform(i, Transform3D())
+	
+	multi_mesh_instance.custom_aabb = AABB(aabb_position, abs(aabb_position) + aabb_size)
+	print("AABB: " + str(multi_mesh_instance.custom_aabb))
 	
 	for property in property_indices.keys():
 		multi_mesh.mesh.material.set_shader_parameter("idx_" + property, property_indices[property])
@@ -138,12 +154,15 @@ func get_model_view_matrix() -> Transform3D:
 	
 	return view_matrix * model_matrix
 
-func compute_all_depths(model_view_matrix: Transform3D, projection_matrix: Projection):
+func transform_to_godot_convention(vec: Vector3) -> Vector3:
 	var rot = Basis(
 		Vector3(0, -1, 0),
 		Vector3(1, 0, 0),
 		Vector3(0, 0, -1),
 	)
+	return rot * vec
+
+func compute_all_depths(model_view_matrix: Transform3D, projection_matrix: Projection):
 	for i in range(n_splats):
 		var idx = i * len(property_indices)
 		var mu = Vector3(
@@ -151,13 +170,13 @@ func compute_all_depths(model_view_matrix: Transform3D, projection_matrix: Proje
 			vertices_float[idx + property_indices["y"]],
 			vertices_float[idx + property_indices["z"]]
 		)
-		var view_space = (model_view_matrix * (rot * mu))
+		var view_space = (model_view_matrix * (mu))
 		var world_position = projection_matrix * Vector4(view_space.x, view_space.y, view_space.z, 1.0)
 		
 		depths[i] = world_position.z / world_position.w
 
 func reindex_by_depth():
-	depth_index.sort_custom(func(idx1, idx2): return depths[idx1] < depths[idx2])
+	depth_index.sort_custom(func(idx1, idx2): return depths[idx1] > depths[idx2])
 	
 func sort_splats_by_depth(model_view_matrix: Transform3D, projection_matrix: Projection):
 	compute_all_depths(model_view_matrix, projection_matrix)
