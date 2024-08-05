@@ -47,7 +47,7 @@ max_vertices = 8000
 
 [node name="GaussianAsset2" parent="." instance=ExtResource("1_2yj05")]
 ply_path = "/home/paul//Downloads/models/bonsai/point_cloud/iteration_7000/point_cloud.ply"
-max_vertices = 8000
+max_vertices = 16000
 
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
 transform = Transform3D(10, 0, 0, 0, 10, 0, 0, 0, 10, 0, 0, 0)

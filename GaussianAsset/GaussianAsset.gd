@@ -31,7 +31,7 @@ func _ready():
 		load_gaussians(ply_path)
 		
 
-func _process(delta):
+func _process(_delta):
 	var direction = (main_camera.global_transform.origin - global_transform.origin).normalized()
 	var angle = last_direction.dot(direction)
 	
@@ -67,7 +67,7 @@ func load_header(path: String):
 
 	for i in range(properties.size()):
 		property_indices[properties[i]] = i
-	sh_degree = ((properties.size() - 14)  / 3) ** 0.5
+	sh_degree = int(((properties.size() - 14)  / 3.0) ** 0.5)
 
 func load_gaussians(path: String):
 	var ply_file = FileAccess.open(path, FileAccess.READ)
@@ -81,7 +81,6 @@ func load_gaussians(path: String):
 	var data_size = n_splats * len(property_indices) * 4
 	vertices_bytes = ply_file.get_buffer(data_size)
 	vertices_float = vertices_bytes.to_float32_array()
-	var vertex_size = vertices_bytes.size()
 	data_image = Image.create_from_data(
 		len(property_indices),
 		n_splats,
