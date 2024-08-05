@@ -4,7 +4,7 @@ extends Camera3D
 @export var move_speed : float = 0.1
 
 func _input(event):
-	if event is InputEventMouseMotion:
+	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 		rotate_y(deg_to_rad(-event.relative.x * mouse_sensitivity))
 		rotate_object_local(Vector3(1.0, 0.0, 0.0), deg_to_rad(-event.relative.y * mouse_sensitivity))
 	if event.is_action_pressed("capture_mouse"):
