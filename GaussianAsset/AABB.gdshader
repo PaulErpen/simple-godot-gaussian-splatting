@@ -1,6 +1,6 @@
 // SOURCE: https://github.com/Demindiro/godot-3d-outline/blob/master/addons/3d_outline/outline.shader
 shader_type spatial;
-render_mode cull_back, unshaded;
+render_mode cull_disabled, unshaded;
 
 uniform vec4 outline_color : source_color;
 uniform float outline_width = 1.0;
