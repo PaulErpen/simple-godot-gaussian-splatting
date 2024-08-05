@@ -89,9 +89,10 @@ transform_format = 1
 mesh = SubResource("PlaneMesh_f1h7x")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_bi8tn"]
-render_priority = 0
+render_priority = -1
 shader = ExtResource("3_ckf5a")
-shader_parameter/wireframeColor = Vector3(1, 0, 0)
+shader_parameter/outline_color = Color(0.851251, 0.370071, 0, 1)
+shader_parameter/outline_width = 0.1
 
 [sub_resource type="BoxMesh" id="BoxMesh_jhsuf"]
 material = SubResource("ShaderMaterial_bi8tn")

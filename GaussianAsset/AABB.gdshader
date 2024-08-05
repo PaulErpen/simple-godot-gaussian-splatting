@@ -1,38 +1,24 @@
+// SOURCE: https://github.com/Demindiro/godot-3d-outline/blob/master/addons/3d_outline/outline.shader
 shader_type spatial;
-render_mode cull_disabled;
+render_mode cull_back, unshaded;
 
-uniform vec3 wireframeColor;
-
-varying vec3 fragPos;
-varying vec3 baryCentric;
+uniform vec4 outline_color : source_color;
+uniform float outline_width = 1.0;
 
 void vertex() {
-	vec4 clipspace = PROJECTION_MATRIX * MODELVIEW_MATRIX * vec4(VERTEX, 1.0);
-	fragPos = vec3((MODEL_MATRIX * vec4(VERTEX, 1.0)).rgb);
+	vec4 clip_position = PROJECTION_MATRIX * (MODELVIEW_MATRIX * vec4(VERTEX, 1.0));
+	vec3 clip_normal = mat3(PROJECTION_MATRIX) * (mat3(MODELVIEW_MATRIX) * NORMAL);
 	
-	// Calculate barycentric coordinates based on vertex ID
-    if (VERTEX_ID % 3 == 0) {
-        baryCentric = vec3(1.0, 0.0, 0.0);
-    } else if (VERTEX_ID % 3 == 1) {
-        baryCentric = vec3(0.0, 1.0, 0.0);
-    } else {
-        baryCentric = vec3(0.0, 0.0, 1.0);
-    }
-	POSITION = vec4(clipspace.xyz / clipspace.w, 1.0);
+	vec2 offset = normalize(clip_normal.xy) / VIEWPORT_SIZE * clip_position.w * outline_width * 2.0;
+	
+	clip_position.xy += offset;
+	
+	POSITION = clip_position;
 }
 
 void fragment() {
-	// Calculate the minimum distance to the edge
-    float minEdgeDistance = min(min(baryCentric.x, baryCentric.y), baryCentric.z);
-    
-    // Smooth the edges
-    float edgeFactor = step(fwidth(minEdgeDistance) * 0.5, minEdgeDistance);
-    
- 	ALBEDO = wireframeColor * (1.0 - edgeFactor);
-	ALPHA = 1.0 - edgeFactor;
+	ALBEDO = outline_color.rgb;
+	if(outline_color.a < 1.0) {
+		ALPHA = outline_color.a;
+	}
 }
-
-//void light() {
-	// Called for every pixel for every light affecting the material.
-	// Uncomment to replace the default light processing function with this one.
-//}
