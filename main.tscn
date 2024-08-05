@@ -45,9 +45,13 @@ transform = Transform3D(0.965926, -1.13133e-08, 0.258819, -0.258819, -4.2222e-08
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 2, 0.4, -5)
 max_vertices = 8000
 
+[node name="GaussianAsset2" parent="." instance=ExtResource("1_2yj05")]
+ply_path = "/home/paul//Downloads/models/bonsai/point_cloud/iteration_7000/point_cloud.ply"
+max_vertices = 8000
+
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
 transform = Transform3D(10, 0, 0, 0, 10, 0, 0, 0, 10, 0, 0, 0)
 mesh = SubResource("PlaneMesh_8wlq3")
 
 [node name="GaussianUi" parent="." node_paths=PackedStringArray("targets") instance=ExtResource("3_3i21k")]
-targets = [NodePath("../GaussianAsset")]
+targets = [NodePath("../GaussianAsset"), NodePath("../GaussianAsset2")]

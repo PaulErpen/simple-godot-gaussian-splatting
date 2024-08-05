@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://GaussianAsset/AABB.gd" id="3_kg4mk"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_qx8nk"]
+resource_local_to_scene = true
 render_priority = 0
 shader = ExtResource("2_i5ity")
 shader_parameter/idx_x = null
@@ -81,10 +82,12 @@ shader_parameter/viewport_size = null
 shader_parameter/shade_depth_texture = null
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_f1h7x"]
+resource_local_to_scene = true
 material = SubResource("ShaderMaterial_qx8nk")
 size = Vector2(1, 1)
 
 [sub_resource type="MultiMesh" id="MultiMesh_c80fy"]
+resource_local_to_scene = true
 transform_format = 1
 mesh = SubResource("PlaneMesh_f1h7x")
 

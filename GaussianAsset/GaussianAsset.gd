@@ -2,7 +2,6 @@
 extends Node3D
 
 @export var ply_path: String = "res://lego.ply"
-#/home/paul//Downloads/models/bonsai/point_cloud/iteration_7000/point_cloud.ply
 @export var max_vertices: int = 500000
 
 @onready var multi_mesh_instance = $MultiMeshInstance3D
