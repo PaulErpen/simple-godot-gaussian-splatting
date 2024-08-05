@@ -38,7 +38,7 @@ func _process(delta):
 	
 	# Only re-sort if camera has changed enough
 	if angle < 0.8:
-		if sort_thread != null and sort_thread.is_alive():
+		if sort_thread != null and sort_thread.is_started() and sort_thread.is_alive() == false:
 			sort_thread.wait_to_finish()
 		sort_thread = Thread.new()
 		sort_thread.start(sort_splats_by_depth.bind(get_model_view_matrix(), main_camera.get_camera_projection()))

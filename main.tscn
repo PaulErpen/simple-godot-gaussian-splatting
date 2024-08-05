@@ -1,7 +1,8 @@
-[gd_scene load_steps=9 format=3 uid="uid://bm2ck853gt53r"]
+[gd_scene load_steps=10 format=3 uid="uid://bm2ck853gt53r"]
 
 [ext_resource type="PackedScene" uid="uid://o8sqsmt28rbo" path="res://GaussianAsset/GaussianAsset.tscn" id="1_2yj05"]
 [ext_resource type="Script" path="res://Camera3D.gd" id="1_ubcp1"]
+[ext_resource type="PackedScene" uid="uid://16qg5k874q3d" path="res://GaussianUI/GaussianUI.tscn" id="3_3i21k"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_8an1y"]
 sky_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
@@ -47,3 +48,6 @@ max_vertices = 8000
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
 transform = Transform3D(10, 0, 0, 0, 10, 0, 0, 0, 10, 0, 0, 0)
 mesh = SubResource("PlaneMesh_8wlq3")
+
+[node name="GaussianUi" parent="." node_paths=PackedStringArray("targets") instance=ExtResource("3_3i21k")]
+targets = [NodePath("../GaussianAsset")]

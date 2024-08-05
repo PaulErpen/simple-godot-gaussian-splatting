@@ -1,0 +1,63 @@
+[gd_scene load_steps=4 format=3 uid="uid://16qg5k874q3d"]
+
+[ext_resource type="Script" path="res://GaussianUI/GaussianUI.gd" id="1_5qot5"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_vhqob"]
+bg_color = Color(0.494118, 0.494118, 0.494118, 1)
+border_width_left = 5
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.493545, 0.493546, 0.493545, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="Theme" id="Theme_obdjm"]
+
+[node name="GaussianUi" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_5qot5")
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -213.0
+offset_top = 5.0
+offset_right = -5.0
+offset_bottom = 89.0
+grow_horizontal = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_vhqob")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer"]
+custom_minimum_size = Vector2(3, 0)
+layout_mode = 2
+theme = SubResource("Theme_obdjm")
+
+[node name="RichTextLabel" type="RichTextLabel" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/normal_font_size = 13
+text = "Toggle mouse capture with \"Alt\""
+fit_content = true
+autowrap_mode = 0
+
+[node name="AABB" type="CheckBox" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Show AABB"
+
+[node name="Depth" type="CheckBox" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Show Depth"
+
+[connection signal="toggled" from="PanelContainer/VBoxContainer/AABB" to="." method="_on_aabb_toggled"]
+[connection signal="toggled" from="PanelContainer/VBoxContainer/Depth" to="." method="_on_depth_toggled"]

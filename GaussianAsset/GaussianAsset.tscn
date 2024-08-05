@@ -104,5 +104,6 @@ script = ExtResource("1_ttjwb")
 multimesh = SubResource("MultiMesh_c80fy")
 
 [node name="AABB" type="MeshInstance3D" parent="."]
+visible = false
 mesh = SubResource("BoxMesh_jhsuf")
 script = ExtResource("3_kg4mk")
