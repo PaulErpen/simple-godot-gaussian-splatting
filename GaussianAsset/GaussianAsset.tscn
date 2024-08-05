@@ -1,95 +1,8 @@
-[gd_scene load_steps=10 format=3 uid="uid://o8sqsmt28rbo"]
+[gd_scene load_steps=6 format=3 uid="uid://o8sqsmt28rbo"]
 
 [ext_resource type="Script" path="res://GaussianAsset/GaussianAsset.gd" id="1_ttjwb"]
-[ext_resource type="Shader" path="res://GaussianAsset/GaussianAsset.gdshader" id="2_i5ity"]
 [ext_resource type="Shader" path="res://GaussianAsset/AABB.gdshader" id="3_ckf5a"]
 [ext_resource type="Script" path="res://GaussianAsset/AABB.gd" id="3_kg4mk"]
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_qx8nk"]
-resource_local_to_scene = true
-render_priority = 0
-shader = ExtResource("2_i5ity")
-shader_parameter/idx_x = null
-shader_parameter/idx_y = null
-shader_parameter/idx_z = null
-shader_parameter/idx_nx = null
-shader_parameter/idx_ny = null
-shader_parameter/idx_nz = null
-shader_parameter/idx_f_dc_0 = null
-shader_parameter/idx_f_dc_1 = null
-shader_parameter/idx_f_dc_2 = null
-shader_parameter/idx_f_rest_0 = null
-shader_parameter/idx_f_rest_1 = null
-shader_parameter/idx_f_rest_2 = null
-shader_parameter/idx_f_rest_3 = null
-shader_parameter/idx_f_rest_4 = null
-shader_parameter/idx_f_rest_5 = null
-shader_parameter/idx_f_rest_6 = null
-shader_parameter/idx_f_rest_7 = null
-shader_parameter/idx_f_rest_8 = null
-shader_parameter/idx_f_rest_9 = null
-shader_parameter/idx_f_rest_10 = null
-shader_parameter/idx_f_rest_11 = null
-shader_parameter/idx_f_rest_12 = null
-shader_parameter/idx_f_rest_13 = null
-shader_parameter/idx_f_rest_14 = null
-shader_parameter/idx_f_rest_15 = null
-shader_parameter/idx_f_rest_16 = null
-shader_parameter/idx_f_rest_17 = null
-shader_parameter/idx_f_rest_18 = null
-shader_parameter/idx_f_rest_19 = null
-shader_parameter/idx_f_rest_20 = null
-shader_parameter/idx_f_rest_21 = null
-shader_parameter/idx_f_rest_22 = null
-shader_parameter/idx_f_rest_23 = null
-shader_parameter/idx_f_rest_24 = null
-shader_parameter/idx_f_rest_25 = null
-shader_parameter/idx_f_rest_26 = null
-shader_parameter/idx_f_rest_27 = null
-shader_parameter/idx_f_rest_28 = null
-shader_parameter/idx_f_rest_29 = null
-shader_parameter/idx_f_rest_30 = null
-shader_parameter/idx_f_rest_31 = null
-shader_parameter/idx_f_rest_32 = null
-shader_parameter/idx_f_rest_33 = null
-shader_parameter/idx_f_rest_34 = null
-shader_parameter/idx_f_rest_35 = null
-shader_parameter/idx_f_rest_36 = null
-shader_parameter/idx_f_rest_37 = null
-shader_parameter/idx_f_rest_38 = null
-shader_parameter/idx_f_rest_39 = null
-shader_parameter/idx_f_rest_40 = null
-shader_parameter/idx_f_rest_41 = null
-shader_parameter/idx_f_rest_42 = null
-shader_parameter/idx_f_rest_43 = null
-shader_parameter/idx_f_rest_44 = null
-shader_parameter/idx_opacity = null
-shader_parameter/idx_scale_0 = null
-shader_parameter/idx_scale_1 = null
-shader_parameter/idx_scale_2 = null
-shader_parameter/idx_rot_0 = null
-shader_parameter/idx_rot_1 = null
-shader_parameter/idx_rot_2 = null
-shader_parameter/idx_rot_3 = null
-shader_parameter/n_splats = null
-shader_parameter/sh_degree = null
-shader_parameter/modifier = null
-shader_parameter/tan_fovx = null
-shader_parameter/tan_fovy = null
-shader_parameter/focal_x = null
-shader_parameter/focal_y = null
-shader_parameter/viewport_size = null
-shader_parameter/shade_depth_texture = null
-
-[sub_resource type="PlaneMesh" id="PlaneMesh_f1h7x"]
-resource_local_to_scene = true
-material = SubResource("ShaderMaterial_qx8nk")
-size = Vector2(1, 1)
-
-[sub_resource type="MultiMesh" id="MultiMesh_c80fy"]
-resource_local_to_scene = true
-transform_format = 1
-mesh = SubResource("PlaneMesh_f1h7x")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_bi8tn"]
 render_priority = -1
@@ -104,7 +17,6 @@ material = SubResource("ShaderMaterial_bi8tn")
 script = ExtResource("1_ttjwb")
 
 [node name="MultiMeshInstance3D" type="MultiMeshInstance3D" parent="."]
-multimesh = SubResource("MultiMesh_c80fy")
 
 [node name="AABB" type="MeshInstance3D" parent="."]
 visible = false

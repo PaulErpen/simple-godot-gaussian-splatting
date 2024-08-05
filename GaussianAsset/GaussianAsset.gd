@@ -90,8 +90,14 @@ func load_gaussians(path: String):
 	)
 	data_texture = ImageTexture.create_from_image(data_image)
 
-	var multi_mesh = multi_mesh_instance.multimesh
+	var multi_mesh = MultiMesh.new()
+	multi_mesh.transform_format = MultiMesh.TRANSFORM_3D
 	multi_mesh.instance_count = n_splats
+	var plane_mesh = PlaneMesh.new()
+	plane_mesh.material = load("res://GaussianAsset/gaussian_shader.tres").duplicate()
+	multi_mesh.mesh = plane_mesh
+	
+	multi_mesh_instance.multimesh = multi_mesh
 	
 	var aabb_position = Vector3.ZERO
 	var aabb_size = Vector3.ZERO
