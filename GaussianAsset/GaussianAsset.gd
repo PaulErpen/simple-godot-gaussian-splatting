@@ -233,9 +233,6 @@ func load_gaussians(path: String):
 	multi_mesh_instance.custom_aabb = AABB(aabb_position, abs(aabb_position) + aabb_size)
 	print("AABB: " + str(multi_mesh_instance.custom_aabb))
 	
-	for property in property_indices.keys():
-		multi_mesh.mesh.material.set_shader_parameter("idx_" + property, property_indices[property])
-		
 	multi_mesh.visible_instance_count = n_splats
 	ply_file.close()
 	
