@@ -330,7 +330,7 @@ void vertex() {
 			vec2 corner = vec2(float((VERTEX_ID << 1) & 2), float(VERTEX_ID & 2)) - 1.;
 			vec2 screen_pos = point_image + radius_px * corner;
 			vUv = point_image - screen_pos;
-			POSITION = vec4(screen_pos / viewport_size * 2.0 - 1.0, 0, 1);
+			POSITION = vec4(screen_pos / viewport_size * 2.0 - 1.0, ndc.z, 1);
 			//POSITION = PROJECTION_MATRIX * VIEW_MATRIX * vec4(VERTEX, 1.0);
 		}
 	}
@@ -341,11 +341,15 @@ void fragment() {
 	vec3 conic = vConic;
 	float power = -0.5 * (conic.x * d.x * d.x + conic.z * d.y * d.y) + conic.y * d.x * d.y;
 	
-	//if (power > 0.0) {
-	//	discard;
-	//}
+	if (power > 0.0) {
+		discard;
+	}
 
 	float alpha = min(0.99, opacity * exp(power));
+	
+	if (alpha < 1.0/255.0) {
+		discard;
+	}
 
 	ALBEDO = color.rgb;
 	ALPHA = alpha;
