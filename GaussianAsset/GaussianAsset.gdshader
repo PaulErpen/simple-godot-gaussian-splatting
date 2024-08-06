@@ -1,6 +1,6 @@
 // Adapted from: https://github.com/haztro/godot-gaussian-splatting/blob/main/shaders/splat.glsl
 shader_type spatial;
-render_mode unshaded, depth_draw_never;
+render_mode unshaded, cull_back;
 
 // property indices
 uniform int idx_x;
@@ -67,10 +67,30 @@ uniform int idx_rot_2;
 uniform int idx_rot_3;
 
 // splat data
-uniform sampler2D data_sampler;
 uniform sampler2D depth_index_sampler;
 uniform int n_splats;
 uniform int sh_degree;
+uniform int texture_size;
+
+uniform sampler2D means_sampler;
+uniform sampler2D dc_sampler;
+uniform sampler2D sh1_1_sampler;
+uniform sampler2D sh1_2_sampler;
+uniform sampler2D sh1_3_sampler;
+uniform sampler2D sh2_1_sampler;
+uniform sampler2D sh2_2_sampler;
+uniform sampler2D sh2_3_sampler;
+uniform sampler2D sh2_4_sampler;
+uniform sampler2D sh2_5_sampler;
+uniform sampler2D sh3_1_sampler;
+uniform sampler2D sh3_2_sampler;
+uniform sampler2D sh3_3_sampler;
+uniform sampler2D sh3_4_sampler;
+uniform sampler2D sh3_5_sampler;
+uniform sampler2D sh3_6_sampler;
+uniform sampler2D sh3_7_sampler;
+uniform sampler2D opa_scale_sampler;
+uniform sampler2D rot_sampler;
 
 // parameters
 uniform float modifier;
@@ -182,7 +202,7 @@ float sigmoid(float x) {
 }
 
 int retrieve_depth_index(int instance_id) {
-	vec4 float_index = texelFetch(depth_index_sampler, ivec2(instance_id, 0), 0);
+	vec4 float_index = texelFetch(depth_index_sampler, ivec2(instance_id % texture_size, int(instance_id / texture_size)), 0);
     int r = int(float_index.r * 255.0);
     int g = int(float_index.g * 255.0);
     int b = int(float_index.b * 255.0);
@@ -191,96 +211,32 @@ int retrieve_depth_index(int instance_id) {
     return (r << 24) | (g << 16) | (b << 8) | a;
 }
 
-vec3[16] retrieve_spherical_harmonics_coef(int index) {
+vec3[16] retrieve_spherical_harmonics_coef(ivec2 index) {
 	vec3[16] sh_coefs = vec3[16];
 	
-	sh_coefs[0] = vec3(
-		texelFetch(data_sampler, ivec2(idx_f_dc_0, index), 0).r,
-		texelFetch(data_sampler, ivec2(idx_f_dc_1, index), 0).r,
-		texelFetch(data_sampler, ivec2(idx_f_dc_2, index), 0).r
-	);
+	sh_coefs[0] = texelFetch(dc_sampler, index, 0).rgb;
 	
 	if (sh_degree > 0) {
-		sh_coefs[1] = vec3(
-			texelFetch(data_sampler, ivec2(idx_f_rest_0, index), 0).r,
-			texelFetch(data_sampler, ivec2(idx_f_rest_1, index), 0).r,
-			texelFetch(data_sampler, ivec2(idx_f_rest_2, index), 0).r
-		);
-		sh_coefs[2] = vec3(
-			texelFetch(data_sampler, ivec2(idx_f_rest_3, index), 0).r,
-			texelFetch(data_sampler, ivec2(idx_f_rest_4, index), 0).r,
-			texelFetch(data_sampler, ivec2(idx_f_rest_5, index), 0).r
-		);
-		sh_coefs[3] = vec3(
-			texelFetch(data_sampler, ivec2(idx_f_rest_6, index), 0).r,
-			texelFetch(data_sampler, ivec2(idx_f_rest_7, index), 0).r,
-			texelFetch(data_sampler, ivec2(idx_f_rest_8, index), 0).r
-		);
+		sh_coefs[1] = texelFetch(sh1_1_sampler, index, 0).rgb;
+		sh_coefs[2] = texelFetch(sh1_2_sampler, index, 0).rgb;
+		sh_coefs[3] = texelFetch(sh1_3_sampler, index, 0).rgb;
 		
 		if (sh_degree > 1) {
-			sh_coefs[4] = vec3(
-				texelFetch(data_sampler, ivec2(idx_f_rest_9, index), 0).r,
-				texelFetch(data_sampler, ivec2(idx_f_rest_10, index), 0).r,
-				texelFetch(data_sampler, ivec2(idx_f_rest_11, index), 0).r
-			);
-			sh_coefs[5] = vec3(
-				texelFetch(data_sampler, ivec2(idx_f_rest_12, index), 0).r,
-				texelFetch(data_sampler, ivec2(idx_f_rest_13, index), 0).r,
-				texelFetch(data_sampler, ivec2(idx_f_rest_14, index), 0).r
-			);
-			sh_coefs[6] = vec3(
-				texelFetch(data_sampler, ivec2(idx_f_rest_15, index), 0).r,
-				texelFetch(data_sampler, ivec2(idx_f_rest_16, index), 0).r,
-				texelFetch(data_sampler, ivec2(idx_f_rest_17, index), 0).r
-			);
-			sh_coefs[7] = vec3(
-				texelFetch(data_sampler, ivec2(idx_f_rest_18, index), 0).r,
-				texelFetch(data_sampler, ivec2(idx_f_rest_19, index), 0).r,
-				texelFetch(data_sampler, ivec2(idx_f_rest_20, index), 0).r
-			);
-			sh_coefs[8] = vec3(
-				texelFetch(data_sampler, ivec2(idx_f_rest_21, index), 0).r,
-				texelFetch(data_sampler, ivec2(idx_f_rest_22, index), 0).r,
-				texelFetch(data_sampler, ivec2(idx_f_rest_23, index), 0).r
-			);
+			sh_coefs[4] = texelFetch(sh2_1_sampler, index, 0).rgb;
+			sh_coefs[5] = texelFetch(sh2_2_sampler, index, 0).rgb;
+			sh_coefs[6] = texelFetch(sh2_3_sampler, index, 0).rgb;
+			sh_coefs[7] = texelFetch(sh2_4_sampler, index, 0).rgb;
+			sh_coefs[8] = texelFetch(sh2_5_sampler, index, 0).rgb;
 		}
 		
 		if (sh_degree > 2) {
-			sh_coefs[9] = vec3(
-				texelFetch(data_sampler, ivec2(idx_f_rest_24, index), 0).r,
-				texelFetch(data_sampler, ivec2(idx_f_rest_25, index), 0).r,
-				texelFetch(data_sampler, ivec2(idx_f_rest_26, index), 0).r
-			);
-			sh_coefs[10] = vec3(
-				texelFetch(data_sampler, ivec2(idx_f_rest_27, index), 0).r,
-				texelFetch(data_sampler, ivec2(idx_f_rest_28, index), 0).r,
-				texelFetch(data_sampler, ivec2(idx_f_rest_29, index), 0).r
-			);
-			sh_coefs[11] = vec3(
-				texelFetch(data_sampler, ivec2(idx_f_rest_30, index), 0).r,
-				texelFetch(data_sampler, ivec2(idx_f_rest_31, index), 0).r,
-				texelFetch(data_sampler, ivec2(idx_f_rest_32, index), 0).r
-			);
-			sh_coefs[12] = vec3(
-				texelFetch(data_sampler, ivec2(idx_f_rest_33, index), 0).r,
-				texelFetch(data_sampler, ivec2(idx_f_rest_34, index), 0).r,
-				texelFetch(data_sampler, ivec2(idx_f_rest_35, index), 0).r
-			);
-			sh_coefs[13] = vec3(
-				texelFetch(data_sampler, ivec2(idx_f_rest_36, index), 0).r,
-				texelFetch(data_sampler, ivec2(idx_f_rest_37, index), 0).r,
-				texelFetch(data_sampler, ivec2(idx_f_rest_38, index), 0).r
-			);
-			sh_coefs[14] = vec3(
-				texelFetch(data_sampler, ivec2(idx_f_rest_39, index), 0).r,
-				texelFetch(data_sampler, ivec2(idx_f_rest_40, index), 0).r,
-				texelFetch(data_sampler, ivec2(idx_f_rest_41, index), 0).r
-			);
-			sh_coefs[15] = vec3(
-				texelFetch(data_sampler, ivec2(idx_f_rest_42, index), 0).r,
-				texelFetch(data_sampler, ivec2(idx_f_rest_43, index), 0).r,
-				texelFetch(data_sampler, ivec2(idx_f_rest_44, index), 0).r
-			);
+			sh_coefs[9] = texelFetch(sh3_1_sampler, index, 0).rgb;
+			sh_coefs[10] = texelFetch(sh3_2_sampler, index, 0).rgb;
+			sh_coefs[11] = texelFetch(sh3_3_sampler, index, 0).rgb;
+			sh_coefs[12] = texelFetch(sh3_4_sampler, index, 0).rgb;
+			sh_coefs[13] = texelFetch(sh3_5_sampler, index, 0).rgb;
+			sh_coefs[14] = texelFetch(sh3_6_sampler, index, 0).rgb;
+			sh_coefs[15] = texelFetch(sh3_7_sampler, index, 0).rgb;
 		}
 	}
 	
@@ -325,25 +281,14 @@ vec3 computeColorFromSH(int deg, vec3 pos, vec3 cam_pos, vec3 sh[16]) {
 
 void vertex() {
 	//int index = retrieve_depth_index(INSTANCE_ID);
-	int index = retrieve_depth_index(INSTANCE_ID);
+	int depth_index = retrieve_depth_index(INSTANCE_ID);
+	ivec2 index = ivec2(depth_index % texture_size, int(depth_index / texture_size));
 	// retrieve data from texture
-	vec3 mu = vec3(
-		texelFetch(data_sampler, ivec2(idx_x, index), 0).r, 
-		texelFetch(data_sampler, ivec2(idx_y, index), 0).r, 
-		texelFetch(data_sampler, ivec2(idx_z, index), 0).r);
+	vec3 mu = texelFetch(means_sampler, index, 0).xyz;
 	//vec3 mu = texelFetch(means_opa_sampler, ivec2(index, 0), 0).rgb;
-	opacity = sigmoid(texelFetch(data_sampler, ivec2(idx_opacity, index), 0).r);
-	vec3 scale = vec3(
-		texelFetch(data_sampler, ivec2(idx_scale_0, index), 0).r,
-		texelFetch(data_sampler, ivec2(idx_scale_1, index), 0).r,
-		texelFetch(data_sampler, ivec2(idx_scale_2, index), 0).r
-	);
-	vec4 rot = vec4(
-		texelFetch(data_sampler, ivec2(idx_rot_0, index), 0).r,
-		texelFetch(data_sampler, ivec2(idx_rot_1, index), 0).r,
-		texelFetch(data_sampler, ivec2(idx_rot_2, index), 0).r,
-		texelFetch(data_sampler, ivec2(idx_rot_3, index), 0).r
-	);
+	opacity = sigmoid(texelFetch(opa_scale_sampler, index, 0).r);
+	vec3 scale = texelFetch(opa_scale_sampler, index, 0).gba;
+	vec4 rot = texelFetch(rot_sampler, index, 0).xyzw;
 	
 	//calculate clip space position and culling
 	vec4 clipSpace = PROJECTION_MATRIX * MODELVIEW_MATRIX * vec4(mu, 1.0);
@@ -385,7 +330,7 @@ void vertex() {
 			vec2 corner = vec2(float((VERTEX_ID << 1) & 2), float(VERTEX_ID & 2)) - 1.;
 			vec2 screen_pos = point_image + radius_px * corner;
 			vUv = point_image - screen_pos;
-			POSITION = vec4(screen_pos / viewport_size * 2.0 - 1.0, ndc.z, 1);
+			POSITION = vec4(screen_pos / viewport_size * 2.0 - 1.0, 0, 1);
 			//POSITION = PROJECTION_MATRIX * VIEW_MATRIX * vec4(VERTEX, 1.0);
 		}
 	}
@@ -402,9 +347,6 @@ void fragment() {
 
 	float alpha = min(0.99, opacity * exp(power));
 
-	//if (alpha < 1.0/255.0) {
-	//	discard;
-	//}
 	ALBEDO = color.rgb;
 	ALPHA = alpha;
 }
