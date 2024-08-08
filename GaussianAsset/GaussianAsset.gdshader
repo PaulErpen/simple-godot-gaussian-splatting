@@ -138,13 +138,9 @@ float sigmoid(float x) {
 }
 
 int retrieve_depth_index(int instance_id) {
-	vec4 float_index = texelFetch(depth_index_sampler, ivec2(instance_id % texture_size, int(instance_id / texture_size)), 0);
-    int r = int(float_index.r * 255.0);
-    int g = int(float_index.g * 255.0);
-    int b = int(float_index.b * 255.0);
-    int a = int(float_index.a * 255.0);
+	vec4 float_index = texelFetch(depth_index_sampler, ivec2(int(instance_id % texture_size), int(instance_id / texture_size)), 0);
     
-    return (r << 24) | (g << 16) | (b << 8) | a;
+    return int(float_index.r);
 }
 
 vec3[16] retrieve_spherical_harmonics_coef(ivec2 index) {
@@ -216,12 +212,10 @@ vec3 computeColorFromSH(int deg, vec3 pos, vec3 cam_pos, vec3 sh[16]) {
 }
 
 void vertex() {
-	//int index = retrieve_depth_index(INSTANCE_ID);
 	int depth_index = retrieve_depth_index(INSTANCE_ID);
 	ivec2 index = ivec2(depth_index % texture_size, int(depth_index / texture_size));
 	// retrieve data from texture
 	vec3 mu = texelFetch(means_sampler, index, 0).xyz;
-	//vec3 mu = texelFetch(means_opa_sampler, ivec2(index, 0), 0).rgb;
 	opacity = sigmoid(texelFetch(opa_scale_sampler, index, 0).r);
 	vec3 scale = texelFetch(opa_scale_sampler, index, 0).gba;
 	vec4 rot = texelFetch(rot_sampler, index, 0).xyzw;
@@ -267,7 +261,6 @@ void vertex() {
 			vec2 screen_pos = point_image + radius_px * corner;
 			vUv = point_image - screen_pos;
 			POSITION = vec4(screen_pos / viewport_size * 2.0 - 1.0, ndc.z, 1);
-			//POSITION = PROJECTION_MATRIX * VIEW_MATRIX * vec4(VERTEX, 1.0);
 		}
 	}
 }

@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://skyite86ppsj"
+path="res://.godot/imported/depth_sort.glsl-9ccab521d5df6180f68f3b9b082f8456.res"
+
+[deps]
+
+source_file="res://Sort/depth_sort.glsl"
+dest_files=["res://.godot/imported/depth_sort.glsl-9ccab521d5df6180f68f3b9b082f8456.res"]
+
+[params]
+

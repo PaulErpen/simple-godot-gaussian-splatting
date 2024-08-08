@@ -45,14 +45,9 @@ transform = Transform3D(0.965926, -1.13133e-08, 0.258819, -0.258819, -4.2222e-08
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 1.65766, 0.458609, -3.67995)
 max_vertices = 16385
 
-[node name="GaussianAsset2" parent="." instance=ExtResource("1_2yj05")]
-transform = Transform3D(1, 0, 0, 0, -1, -8.74228e-08, 0, 8.74228e-08, -1, 7, 0, -7)
-ply_path = "res://ply_files/bonsai.ply"
-max_vertices = 68435456
-
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
 transform = Transform3D(10, 0, 0, 0, 10, 0, 0, 0, 10, 0, 0, 0)
 mesh = SubResource("PlaneMesh_8wlq3")
 
 [node name="GaussianUi" parent="." node_paths=PackedStringArray("targets") instance=ExtResource("3_3i21k")]
-targets = [NodePath("../GaussianAsset"), NodePath("../GaussianAsset2")]
+targets = [NodePath("../GaussianAsset")]
