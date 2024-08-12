@@ -40,6 +40,6 @@ void main() {
     vec4 projected_vertex = projection_matrix * (model_view_matrix * vertex);
     
     // Write depth value to the buffer
-    depths[idx] = projected_vertex.z;
+    depths[idx] = length(projected_vertex.xyz);
     //depths[gl_GlobalInvocationID.x] = vertex.y;
 }
