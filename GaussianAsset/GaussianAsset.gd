@@ -22,6 +22,8 @@ var means_byte_array: PackedByteArray
 
 var depth_index_texture_rid: RID
 var depth_index_texture: Texture2DRD
+var depth_index_in_buffer: RID
+var depth_index_out_buffer: RID
 var model_view_buffer: RID
 var projection_buffer: RID
 var depth_buffer: RID
@@ -30,6 +32,8 @@ var projection_pipeline: RID
 var means_buffer: RID
 var sort_uniform_set: RID
 var sort_pipeline: RID
+var texture_projection_uniform_set: RID
+var texture_projection_pipeline: RID
 
 var means_image_texture: ImageTexture
 var dc_image_texture: ImageTexture
@@ -115,16 +119,46 @@ func setup_sort_pipeline():
 	print("projection pipeline valid: ", rd.compute_pipeline_is_valid(projection_pipeline))
 	
 	# sort
-	var sort_shader_file = load("res://Sort/depth_sort.glsl")
+	var sort_shader_file = load("res://Sort/single_radix_sort.glsl")
 	var sort_shader_spirv = sort_shader_file.get_spirv()
 	var sort_shader := rd.shader_create_from_spirv(sort_shader_spirv)
 	
 	# uniforms
+	# depth index in
+	var depth_index_in_bytes = PackedInt32Array(depth_index).to_byte_array()
+	depth_index_in_bytes.resize(n_splats * 4)
+	depth_index_in_buffer = rd.storage_buffer_create(depth_index_in_bytes.size(), depth_index_in_bytes)
+	var depth_index_in_uniform := RDUniform.new()
+	depth_index_in_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	depth_index_in_uniform.binding = 0
+	depth_index_in_uniform.add_id(depth_index_in_buffer)
+	
+	# depth index out
+	var depth_index_out_bytes = PackedInt32Array(depth_index).to_byte_array()
+	depth_index_out_bytes.resize(n_splats * 4)
+	depth_index_out_buffer = rd.storage_buffer_create(depth_index_out_bytes.size(), depth_index_out_bytes)
+	var depth_index_out_uniform := RDUniform.new()
+	depth_index_out_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	depth_index_out_uniform.binding = 2
+	depth_index_out_uniform.add_id(depth_index_out_buffer)
+	
+	var sort_bindings = [
+		depth_index_in_bytes,
+		depth_index_out_bytes,
+		depth_uniform,
+	]
+	sort_uniform_set = rd.uniform_set_create(sort_bindings, sort_shader, 0)
+	sort_pipeline = rd.compute_pipeline_create(sort_shader)
+	
+	print("sort pipeline valid: ", rd.compute_pipeline_is_valid(sort_pipeline))
+	
+	# project to texture
+	var project_to_texture_shader_file = load("res://Sort/project_to_texture.glsl")
+	var project_to_texture_shader_spirv = project_to_texture_shader_file.get_spirv()
+	var project_to_texture_shader := rd.shader_create_from_spirv(sort_shader_spirv)
+	
 	# depth index texture
 	var depth_index_bytes = PackedFloat32Array(depth_index).to_byte_array()
-	#var size_before = depth_index_bytes.size()
-	#depth_index_bytes.resize(texture_size ** 2 * 4)
-	#var size_after = texture_size ** 2 * 4
 	fill_byte_array(depth_index_bytes, (texture_size ** 2 - n_splats) * 4)
 	var tf : RDTextureFormat = RDTextureFormat.new()
 	tf.format = RenderingDevice.DATA_FORMAT_R32_SFLOAT
@@ -152,14 +186,14 @@ func setup_sort_pipeline():
 	depth_index_uniform.binding = 0
 	depth_index_uniform.add_id(depth_index_texture_rid)
 	
-	var sort_bindings = [
-		depth_uniform,
-		depth_index_uniform
+	var texture_projection_bindings = [
+		depth_index_in_bytes,
+		depth_index_uniform,
 	]
-	sort_uniform_set = rd.uniform_set_create(sort_bindings, sort_shader, 0)
-	sort_pipeline = rd.compute_pipeline_create(sort_shader)
+	texture_projection_uniform_set = rd.uniform_set_create(texture_projection_bindings, project_to_texture_shader, 0)
+	texture_projection_pipeline = rd.compute_pipeline_create(project_to_texture_shader)
 	
-	print("sort pipeline valid: ", rd.compute_pipeline_is_valid(sort_pipeline))
+	print("texture projection pipeline valid: ", rd.compute_pipeline_is_valid(sort_pipeline))
 
 
 func _matrix_to_bytes(p : Projection) -> PackedByteArray:
@@ -429,12 +463,16 @@ func sort_splats_by_depth(model_view_matrix: Transform3D, main_camera_projection
 	
 	rd.compute_list_add_barrier(compute_list)
 	
-	for i in range(n_splats):
-		rd.compute_list_bind_compute_pipeline(compute_list, sort_pipeline)
-		var push_constants = PackedInt32Array([n_splats, i])
-		rd.compute_list_set_push_constant(compute_list, push_constants.to_byte_array(), push_constants.size() * 8)
-		rd.compute_list_bind_uniform_set(compute_list, sort_uniform_set, 0)
-		rd.compute_list_dispatch(compute_list, (n_splats / 1024 / 2) + 1, 1, 1)
-		rd.compute_list_add_barrier(compute_list)
+	rd.compute_list_bind_compute_pipeline(compute_list, sort_pipeline)
+	var push_constants = PackedInt32Array([n_splats])
+	rd.compute_list_set_push_constant(compute_list, push_constants.to_byte_array(), push_constants.size() * 8)
+	rd.compute_list_bind_uniform_set(compute_list, sort_uniform_set, 0)
+	rd.compute_list_dispatch(compute_list, 1, 1, 1)
+	rd.compute_list_add_barrier(compute_list)
+	
+	rd.compute_list_bind_compute_pipeline(compute_list, texture_projection_pipeline)
+	rd.compute_list_set_push_constant(compute_list, push_constants.to_byte_array(), push_constants.size() * 8)
+	rd.compute_list_bind_uniform_set(compute_list, texture_projection_uniform_set, 0)
+	rd.compute_list_dispatch(n_splats / 1024 + 1, 1, 1, 1)
 	
 	rd.compute_list_end()

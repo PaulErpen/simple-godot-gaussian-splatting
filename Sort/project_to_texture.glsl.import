@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://5wjn3paiw1s8"
+path="res://.godot/imported/project_to_texture.glsl-545dc6a39333dac06e119e6c2f879485.res"
+
+[deps]
+
+source_file="res://Sort/project_to_texture.glsl"
+dest_files=["res://.godot/imported/project_to_texture.glsl-545dc6a39333dac06e119e6c2f879485.res"]
+
+[params]
+

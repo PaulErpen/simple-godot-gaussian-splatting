@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://dldoyshhyhom5"
+path="res://.godot/imported/single_radix_sort.glsl-6f6c4d05b1e8326eef86023415593766.res"
+
+[deps]
+
+source_file="res://Sort/single_radix_sort.glsl"
+dest_files=["res://.godot/imported/single_radix_sort.glsl-6f6c4d05b1e8326eef86023415593766.res"]
+
+[params]
+
