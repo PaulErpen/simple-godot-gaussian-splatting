@@ -42,6 +42,11 @@ shared BinFlags[RADIX_SORT_BINS] bin_flags;
 
 #define ELEMENT_IN(index, iteration) (iteration % 2 == 0 ? g_elements_in[index] : g_elements_out[index])
 
+uint FloatToUint(float f) {
+    uint mask = -(int(uint(f) >> 31)) | 0x80000000;
+    return uint(f) ^ mask;
+}
+
 void main() {
     uint lID = gl_LocalInvocationID.x;
     uint sID = gl_SubgroupID;
@@ -59,7 +64,7 @@ void main() {
         for (uint ID = lID; ID < g_num_elements; ID += WORKGROUP_SIZE) {
             uint index_in = ELEMENT_IN(ID, iteration);
             // determine the bin
-            const uint bin = uint(floatBitsToUint(depths[index_in]) >> shift) & uint(RADIX_SORT_BINS - 1);
+            const uint bin = uint(FloatToUint(depths[index_in]) >> shift) & uint(RADIX_SORT_BINS - 1);
             // increment the histogram
             atomicAdd(histogram[bin], 1U);
         }
@@ -110,7 +115,7 @@ void main() {
             uint binOffset = 0;
             if (ID < g_num_elements) {
                 index_in = ELEMENT_IN(ID, iteration);
-                binID = uint((floatBitsToUint(depths[index_in]) >> shift)) & uint(RADIX_SORT_BINS - 1);
+                binID = uint((FloatToUint(depths[index_in]) >> shift)) & uint(RADIX_SORT_BINS - 1);
                 // offset for group
                 binOffset = global_offsets[binID];
                 // add bit to flag

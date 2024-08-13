@@ -119,7 +119,7 @@ func setup_sort_pipeline():
 	print("projection pipeline valid: ", rd.compute_pipeline_is_valid(projection_pipeline))
 	
 	# sort
-	var sort_shader_file = load("res://Sort/depth_sort.glsl")
+	var sort_shader_file = load("res://Sort/single_radix_sort.glsl")
 	var sort_shader_spirv = sort_shader_file.get_spirv()
 	var sort_shader := rd.shader_create_from_spirv(sort_shader_spirv)
 	
@@ -461,13 +461,12 @@ func sort_splats_by_depth(model_view_matrix: Transform3D, main_camera_projection
 	
 	rd.compute_list_add_barrier(compute_list)
 	
-	for i in range(n_splats):
-		rd.compute_list_bind_compute_pipeline(compute_list, sort_pipeline)
-		var push_constants_sort = PackedInt32Array([n_splats, i])
-		rd.compute_list_set_push_constant(compute_list, push_constants_sort.to_byte_array(), push_constants_sort.size() * 8)
-		rd.compute_list_bind_uniform_set(compute_list, sort_uniform_set, 0)
-		rd.compute_list_dispatch(compute_list, (n_splats / 1024 / 2) + 1, 1, 1)
-		rd.compute_list_add_barrier(compute_list)
+	rd.compute_list_bind_compute_pipeline(compute_list, sort_pipeline)
+	var push_constants_sort = PackedInt32Array([n_splats, 0])
+	rd.compute_list_set_push_constant(compute_list, push_constants_sort.to_byte_array(), push_constants_sort.size() * 8)
+	rd.compute_list_bind_uniform_set(compute_list, sort_uniform_set, 0)
+	rd.compute_list_dispatch(compute_list, 1, 1, 1)
+	rd.compute_list_add_barrier(compute_list)
 	
 	rd.compute_list_bind_compute_pipeline(compute_list, texture_projection_pipeline)
 	var push_constants_projection = PackedInt32Array([n_splats, 0])
