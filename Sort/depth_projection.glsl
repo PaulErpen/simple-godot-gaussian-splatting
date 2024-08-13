@@ -8,18 +8,18 @@ layout(set = 0, binding = 0) buffer ModelView {
     mat4 model_view_matrix;
 };
 
-layout(set = 0, binding = 4) buffer ProjectionMatrix {
-    mat4 projection_matrix;
+// Input vertex positions
+layout(set = 0, binding = 1) buffer Vertices {
+    float vertices[];
 };
 
 // Output depth buffer
-layout(set = 0, binding = 1) buffer DepthBuffer {
+layout(set = 0, binding = 2) buffer DepthBuffer {
     float depths[];
 };
 
-// Input vertex positions
-layout(set = 0, binding = 2) buffer Vertices {
-    float vertices[];
+layout(set = 0, binding = 4) buffer ProjectionMatrix {
+    mat4 projection_matrix;
 };
 
 float sigmoid(float x) {

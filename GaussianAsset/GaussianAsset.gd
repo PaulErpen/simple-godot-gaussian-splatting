@@ -96,7 +96,7 @@ func setup_sort_pipeline():
 	depth_buffer = rd.storage_buffer_create(depth_bytes.size(), depth_bytes)
 	var depth_uniform := RDUniform.new()
 	depth_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
-	depth_uniform.binding = 1
+	depth_uniform.binding = 2
 	depth_uniform.add_id(depth_buffer)
 	
 	# vertex buffer
@@ -104,7 +104,7 @@ func setup_sort_pipeline():
 	means_buffer = rd.storage_buffer_create(means_byte_array.size(), means_byte_array)
 	var means_uniform := RDUniform.new()
 	means_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
-	means_uniform.binding = 2
+	means_uniform.binding = 1
 	means_uniform.add_id(means_buffer)
 	
 	var projection_bindings = [
@@ -139,12 +139,12 @@ func setup_sort_pipeline():
 	depth_index_out_buffer = rd.storage_buffer_create(depth_index_out_bytes.size(), depth_index_out_bytes)
 	var depth_index_out_uniform := RDUniform.new()
 	depth_index_out_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
-	depth_index_out_uniform.binding = 2
+	depth_index_out_uniform.binding = 1
 	depth_index_out_uniform.add_id(depth_index_out_buffer)
 	
 	var sort_bindings = [
-		depth_index_in_bytes,
-		depth_index_out_bytes,
+		depth_index_in_uniform,
+		depth_index_out_uniform,
 		depth_uniform,
 	]
 	sort_uniform_set = rd.uniform_set_create(sort_bindings, sort_shader, 0)
@@ -155,7 +155,7 @@ func setup_sort_pipeline():
 	# project to texture
 	var project_to_texture_shader_file = load("res://Sort/project_to_texture.glsl")
 	var project_to_texture_shader_spirv = project_to_texture_shader_file.get_spirv()
-	var project_to_texture_shader := rd.shader_create_from_spirv(sort_shader_spirv)
+	var project_to_texture_shader := rd.shader_create_from_spirv(project_to_texture_shader_spirv)
 	
 	# depth index texture
 	var depth_index_bytes = PackedFloat32Array(depth_index).to_byte_array()
@@ -172,9 +172,7 @@ func setup_sort_pipeline():
 					RenderingDevice.TEXTURE_USAGE_STORAGE_BIT + 
 					RenderingDevice.TEXTURE_USAGE_CAN_UPDATE_BIT + 
 					RenderingDevice.TEXTURE_USAGE_CAN_COPY_TO_BIT)
-	#depth_index_texture_rid = rd.texture_create(tf, RDTextureView.new(), [depth_index_bytes])
 	depth_index_texture_rid = rd.texture_create(tf, RDTextureView.new(), [depth_index_bytes])
-	##rd.texture_clear(depth_index_texture_rid, Color(100, 1, 1, 0), 0, 1, 0, 1)
 	assert(rd.texture_is_valid(depth_index_texture_rid))
 	depth_index_texture = Texture2DRD.new()
 	depth_index_texture.texture_rd_rid = depth_index_texture_rid
@@ -187,7 +185,7 @@ func setup_sort_pipeline():
 	depth_index_uniform.add_id(depth_index_texture_rid)
 	
 	var texture_projection_bindings = [
-		depth_index_in_bytes,
+		depth_index_out_uniform,
 		depth_index_uniform,
 	]
 	texture_projection_uniform_set = rd.uniform_set_create(texture_projection_bindings, project_to_texture_shader, 0)
@@ -464,7 +462,7 @@ func sort_splats_by_depth(model_view_matrix: Transform3D, main_camera_projection
 	rd.compute_list_add_barrier(compute_list)
 	
 	rd.compute_list_bind_compute_pipeline(compute_list, sort_pipeline)
-	var push_constants = PackedInt32Array([n_splats])
+	var push_constants = PackedInt32Array([n_splats, 0])
 	rd.compute_list_set_push_constant(compute_list, push_constants.to_byte_array(), push_constants.size() * 8)
 	rd.compute_list_bind_uniform_set(compute_list, sort_uniform_set, 0)
 	rd.compute_list_dispatch(compute_list, 1, 1, 1)
@@ -473,6 +471,6 @@ func sort_splats_by_depth(model_view_matrix: Transform3D, main_camera_projection
 	rd.compute_list_bind_compute_pipeline(compute_list, texture_projection_pipeline)
 	rd.compute_list_set_push_constant(compute_list, push_constants.to_byte_array(), push_constants.size() * 8)
 	rd.compute_list_bind_uniform_set(compute_list, texture_projection_uniform_set, 0)
-	rd.compute_list_dispatch(n_splats / 1024 + 1, 1, 1, 1)
+	rd.compute_list_dispatch(compute_list, n_splats / 1024 + 1, 1, 1)
 	
 	rd.compute_list_end()

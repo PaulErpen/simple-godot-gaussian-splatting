@@ -5,7 +5,7 @@ layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
 
 layout(set = 0, binding = 0, r32f) uniform image2D depth_index_texture;
 
-layout (std430, set = 0, binding = 2) buffer elements_out {
+layout (std430, set = 0, binding = 1) buffer elements_out {
     uint g_elements_out[];
 };
 
