@@ -87,7 +87,7 @@ func setup_sort_pipeline():
 	projection_buffer = rd.storage_buffer_create(projection_bytes.size(), projection_bytes)
 	var projection_uniform := RDUniform.new()
 	projection_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
-	projection_uniform.binding = 4
+	projection_uniform.binding = 3
 	projection_uniform.add_id(projection_buffer)
 	
 	# depth buffer
@@ -462,14 +462,15 @@ func sort_splats_by_depth(model_view_matrix: Transform3D, main_camera_projection
 	rd.compute_list_add_barrier(compute_list)
 	
 	rd.compute_list_bind_compute_pipeline(compute_list, sort_pipeline)
-	var push_constants = PackedInt32Array([n_splats, 0])
-	rd.compute_list_set_push_constant(compute_list, push_constants.to_byte_array(), push_constants.size() * 8)
+	var push_constants_sort = PackedInt32Array([n_splats, 0])
+	rd.compute_list_set_push_constant(compute_list, push_constants_sort.to_byte_array(), push_constants_sort.size() * 8)
 	rd.compute_list_bind_uniform_set(compute_list, sort_uniform_set, 0)
 	rd.compute_list_dispatch(compute_list, 1, 1, 1)
 	rd.compute_list_add_barrier(compute_list)
 	
 	rd.compute_list_bind_compute_pipeline(compute_list, texture_projection_pipeline)
-	rd.compute_list_set_push_constant(compute_list, push_constants.to_byte_array(), push_constants.size() * 8)
+	var push_constants_projection = PackedInt32Array([n_splats, 0])
+	rd.compute_list_set_push_constant(compute_list, push_constants_projection.to_byte_array(), push_constants_projection.size() * 8)
 	rd.compute_list_bind_uniform_set(compute_list, texture_projection_uniform_set, 0)
 	rd.compute_list_dispatch(compute_list, n_splats / 1024 + 1, 1, 1)
 	

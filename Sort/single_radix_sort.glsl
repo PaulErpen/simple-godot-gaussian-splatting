@@ -22,12 +22,12 @@ layout (set = 0, binding = 0) buffer elements_in {
     uint g_elements_in[];
 };
 
-layout(set = 0, binding = 1) buffer DepthBuffer {
-    float depths[];
+layout (set = 0, binding = 1) buffer elements_out {
+    uint g_elements_out[];
 };
 
-layout (set = 0, binding = 2) buffer elements_out {
-    uint g_elements_out[];
+layout(set = 0, binding = 2) buffer DepthBuffer {
+    float depths[];
 };
 
 shared uint[RADIX_SORT_BINS] histogram;
@@ -57,8 +57,9 @@ void main() {
         barrier();
 
         for (uint ID = lID; ID < g_num_elements; ID += WORKGROUP_SIZE) {
+            uint index_in = ELEMENT_IN(ID, iteration);
             // determine the bin
-            const uint bin = uint(ELEMENT_IN(ID, iteration) >> shift) & uint(RADIX_SORT_BINS - 1);
+            const uint bin = uint(floatBitsToUint(depths[index_in]) >> shift) & uint(RADIX_SORT_BINS - 1);
             // increment the histogram
             atomicAdd(histogram[bin], 1U);
         }
@@ -104,12 +105,12 @@ void main() {
             }
             barrier();
 
-            uint element_in = 0;
+            uint index_in = 0;
             uint binID = 0;
             uint binOffset = 0;
             if (ID < g_num_elements) {
-                element_in = ELEMENT_IN(ID, iteration);
-                binID = uint((element_in >> shift)) & uint(RADIX_SORT_BINS - 1);
+                index_in = ELEMENT_IN(ID, iteration);
+                binID = uint((floatBitsToUint(depths[index_in]) >> shift)) & uint(RADIX_SORT_BINS - 1);
                 // offset for group
                 binOffset = global_offsets[binID];
                 // add bit to flag
@@ -130,9 +131,9 @@ void main() {
                     count += full_count;
                 }
                 if (iteration % 2 == 0) {
-                    g_elements_out[binOffset + prefix] = element_in;
+                    g_elements_out[binOffset + prefix] = index_in;
                 } else {
-                    g_elements_in[binOffset + prefix] = element_in;
+                    g_elements_in[binOffset + prefix] = index_in;
                 }
                 if (prefix == count - 1) {
                     atomicAdd(global_offsets[binID], count);

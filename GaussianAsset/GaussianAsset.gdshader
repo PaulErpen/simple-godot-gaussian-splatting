@@ -212,7 +212,8 @@ vec3 computeColorFromSH(int deg, vec3 pos, vec3 cam_pos, vec3 sh[16]) {
 }
 
 void vertex() {
-	int depth_index = retrieve_depth_index(INSTANCE_ID);
+	//int depth_index = retrieve_depth_index(INSTANCE_ID);
+	int depth_index = INSTANCE_ID;
 	ivec2 index = ivec2(depth_index % texture_size, int(depth_index / texture_size));
 	// retrieve data from texture
 	vec3 mu = texelFetch(means_sampler, index, 0).xyz;
@@ -251,8 +252,10 @@ void vertex() {
 				float idx_color = float(INSTANCE_ID) / float(n_splats);
 				color = vec3(idx_color, 1.0 - idx_color, 0.0);
 			} else {
-				vec3[16] sh = retrieve_spherical_harmonics_coef(index);
-				color = computeColorFromSH(sh_degree, mu, vec3(VIEW_MATRIX[3].xyz), sh);  
+				//vec3[16] sh = retrieve_spherical_harmonics_coef(index);
+				//color = computeColorFromSH(sh_degree, mu, vec3(VIEW_MATRIX[3].xyz), sh);
+				float idx_color = float(retrieve_depth_index(INSTANCE_ID)) / float(n_splats);
+				color = vec3(idx_color, 1.0 - idx_color, 0.0);
 			}
 			
 			vConic = conic;

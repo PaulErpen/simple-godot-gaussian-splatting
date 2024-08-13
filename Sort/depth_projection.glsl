@@ -18,7 +18,7 @@ layout(set = 0, binding = 2) buffer DepthBuffer {
     float depths[];
 };
 
-layout(set = 0, binding = 4) buffer ProjectionMatrix {
+layout(set = 0, binding = 3) buffer ProjectionMatrix {
     mat4 projection_matrix;
 };
 
@@ -36,10 +36,8 @@ void main() {
     vec4 vertex = vec4(vertices[idx * 3], vertices[idx * 3 + 1], vertices[idx * 3 + 2], 1.0);
     
     // Apply model-view-projection matrix
-    //vec4 projected_vertex = projection_matrix * model_view_matrix * vertex;
     vec4 projected_vertex = projection_matrix * (model_view_matrix * vertex);
     
     // Write depth value to the buffer
     depths[idx] = length(projected_vertex.xyz);
-    //depths[gl_GlobalInvocationID.x] = vertex.y;
 }
