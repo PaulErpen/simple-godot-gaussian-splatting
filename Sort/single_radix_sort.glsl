@@ -42,9 +42,13 @@ shared BinFlags[RADIX_SORT_BINS] bin_flags;
 
 #define ELEMENT_IN(index, iteration) (iteration % 2 == 0 ? g_elements_in[index] : g_elements_out[index])
 
-uint FloatToUint(float f) {
-    uint mask = -(int(uint(f) >> 31)) | 0x80000000;
-    return uint(f) ^ mask;
+//uint FloatToUint(float f) {
+//    uint mask = -(int(uint(f) >> 31)) | 0x80000000;
+//    return uint(f) ^ mask;
+//}
+
+uint FloatToUint(float f) { 
+    return uint(f);
 }
 
 void main() {

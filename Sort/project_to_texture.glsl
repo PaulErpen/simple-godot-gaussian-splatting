@@ -22,5 +22,5 @@ void main() {
         return;
     }
 
-    imageStore(depth_index_texture, ivec2(i % texture_size, i / texture_size), vec4(float(g_elements_out[i])));
+    imageStore(depth_index_texture, ivec2(i % texture_size, i / texture_size), vec4(float(g_elements_out[n_splats - i])));
 }
