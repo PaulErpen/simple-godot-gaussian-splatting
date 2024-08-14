@@ -18,3 +18,8 @@ func _on_depth_toggled(toggled_on):
 		for target in targets:
 			target.get_node("MultiMeshInstance3D").multimesh.mesh.material.set_shader_parameter("shade_depth_texture", toggled_on)
 	depth_checkbox.release_focus()
+
+func _on_trigger_sort_button_pressed():
+	if targets != null:
+		for target in targets:
+			target.call_sort()

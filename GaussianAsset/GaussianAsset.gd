@@ -209,12 +209,12 @@ func _process(_delta):
 	
 	# Only re-sort if camera has changed enough
 	if angle < 0.8:
-		#if sort_thread != null and sort_thread.is_started():
-		#	sort_thread.wait_to_finish()
-		#sort_thread = Thread.new()
-		print("Sorting")
-		RenderingServer.call_on_render_thread(sort_splats_by_depth.bind(get_model_view_matrix(), main_camera.get_camera_projection()))
+		call_sort()
 		last_direction = direction
+
+func call_sort():
+	print("Sorting")
+	RenderingServer.call_on_render_thread(sort_splats_by_depth.bind(get_model_view_matrix(), main_camera.get_camera_projection()))
 
 # Thread must be disposed (or "joined"), for portability.
 func _exit_tree():
