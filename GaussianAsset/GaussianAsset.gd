@@ -181,11 +181,11 @@ func setup_sort_pipeline():
 	
 	var depth_index_uniform := RDUniform.new()
 	depth_index_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
-	depth_index_uniform.binding = 0
+	depth_index_uniform.binding = 1
 	depth_index_uniform.add_id(depth_index_texture_rid)
 	
 	var texture_projection_bindings = [
-		depth_index_out_uniform,
+		depth_index_in_uniform,
 		depth_index_uniform,
 	]
 	texture_projection_uniform_set = rd.uniform_set_create(texture_projection_bindings, project_to_texture_shader, 0)
