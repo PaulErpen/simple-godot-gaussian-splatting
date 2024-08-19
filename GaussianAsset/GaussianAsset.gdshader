@@ -288,7 +288,7 @@ void fragment() {
 
 	float alpha = min(0.99, opacity * exp(power));
 	
-	if (alpha < 10.0/255.0) {
+	if (alpha < 1.0/255.0) {
 		discard;
 	}
 
