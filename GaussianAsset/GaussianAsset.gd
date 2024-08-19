@@ -57,7 +57,6 @@ var rot_image_texture: ImageTexture
 
 var vertices_float: PackedFloat32Array
 var sh_degree: int
-var sort_thread: Thread
 var data_image: Image
 var vertices_bytes
 
@@ -218,8 +217,32 @@ func call_sort():
 
 # Thread must be disposed (or "joined"), for portability.
 func _exit_tree():
-	if sort_thread != null:
-		sort_thread.wait_to_finish()
+	if depth_index_texture_rid != null:
+		RenderingServer.free_rid(depth_index_texture_rid)
+	if depth_index_in_buffer != null:
+		RenderingServer.free_rid(depth_index_in_buffer)
+	if depth_index_out_buffer != null:
+		RenderingServer.free_rid(depth_index_out_buffer)
+	if model_view_buffer != null:
+		RenderingServer.free_rid(model_view_buffer)
+	if projection_buffer != null:
+		RenderingServer.free_rid(projection_buffer)
+	if depth_buffer != null:
+		RenderingServer.free_rid(depth_buffer)
+	if projection_uniform_set != null:
+		RenderingServer.free_rid(projection_uniform_set)
+	if projection_pipeline != null:
+		RenderingServer.free_rid(projection_pipeline)
+	if means_buffer != null:
+		RenderingServer.free_rid(means_buffer)
+	if sort_uniform_set != null:
+		RenderingServer.free_rid(sort_uniform_set)
+	if sort_pipeline != null:
+		RenderingServer.free_rid(sort_pipeline)
+	if texture_projection_uniform_set != null:
+		RenderingServer.free_rid(texture_projection_uniform_set)
+	if texture_projection_pipeline != null:
+		RenderingServer.free_rid(texture_projection_pipeline)
 
 func load_header(path: String):
 	var ply_file = FileAccess.open(path, FileAccess.READ)
