@@ -51,7 +51,7 @@ shared BinFlags[RADIX_SORT_BINS] bin_flags;
 #define ASSERT(cond, identifier) if (!(cond)) {  debug_buffer[0] = identifier; }
 
 uint my_uint_cast(float f) { 
-    return uint(f);
+    return floatBitsToUint(f);
 }
 
 void main() {
