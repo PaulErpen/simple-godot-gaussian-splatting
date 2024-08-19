@@ -6,52 +6,52 @@
 #extension GL_KHR_shader_subgroup_basic: enable
 #extension GL_KHR_shader_subgroup_arithmetic: enable
 
-#define WORKGROUP_SIZE 256// assert WORKGROUP_SIZE >= RADIX_SORT_BINS
+#define WORKGROUP_SIZE 256
 #define RADIX_SORT_BINS 256
-#define SUBGROUP_SIZE 32// 32 NVIDIA; 64 AMD
-
-#define ITERATIONS 4// 4 iterations, sorting 8 bits per iteration
+#define SUBGROUP_SIZE 32
 
 layout (local_size_x = WORKGROUP_SIZE) in;
 
 layout (push_constant, std430) uniform PushConstants {
-    uint g_num_elements;
+    uint num_elements;
 };
 
 layout (set = 0, binding = 0) buffer elements_in {
-    uint g_elements_in[];
+    uint index_in[];
 };
 
 layout (set = 0, binding = 1) buffer elements_out {
-    uint g_elements_out[];
+    uint index_out[];
 };
 
 layout(set = 0, binding = 2) buffer DepthBuffer {
-    float depths[];
+    uint depths[];
+};
+
+layout(set = 0, binding = 3) buffer BinBuffer {
+    uint bin_buffer[];
 };
 
 shared uint[RADIX_SORT_BINS] histogram;
-shared uint[RADIX_SORT_BINS / SUBGROUP_SIZE] sums;// subgroup reductions
-shared uint[RADIX_SORT_BINS] local_offsets;// local exclusive scan (prefix sum) (inside subgroups)
-shared uint[RADIX_SORT_BINS] global_offsets;// global exclusive scan (prefix sum)
+shared uint[RADIX_SORT_BINS] prefix_sums;
+shared uint[WORKGROUP_SIZE] shared_data;
+shared uint[WORKGROUP_SIZE] global_offsets;
 
 struct BinFlags {
     uint flags[WORKGROUP_SIZE / 32];
 };
 shared BinFlags[RADIX_SORT_BINS] bin_flags;
 
-#define ELEMENT_IN(index, iteration) (iteration % 2 == 0 ? g_elements_in[index] : g_elements_out[index])
+#define ELEMENT_IN(index, iteration) (iteration % 2 == 0 ? index_in[index] : index_out[index])
 
-uint FloatToUint(float f) { 
-    return floatBitsToUint(f);
+uint my_uint_cast(uint f) { 
+    return f;
 }
 
 void main() {
     uint lID = gl_LocalInvocationID.x;
-    uint sID = gl_SubgroupID;
-    uint lsID = gl_SubgroupInvocationID;
 
-    for (uint iteration = 0; iteration < ITERATIONS; iteration++) {
+    for (uint iteration = 0; iteration < 4; iteration++) {
         uint shift = 8 * iteration;
 
         // initialize histogram
@@ -60,43 +60,48 @@ void main() {
         }
         barrier();
 
-        for (uint ID = lID; ID < g_num_elements; ID += WORKGROUP_SIZE) {
-            uint index_in = ELEMENT_IN(ID, iteration);
+        for (uint ID = lID; ID < num_elements; ID += WORKGROUP_SIZE) {
+            uint element = ELEMENT_IN(ID, iteration);
+            uint depth = my_uint_cast(depths[element]);
             // determine the bin
-            const uint bin = uint(FloatToUint(depths[index_in]) >> shift) & uint(RADIX_SORT_BINS - 1);
+            uint bin = (depth >> shift) & (RADIX_SORT_BINS - 1);
             // increment the histogram
             atomicAdd(histogram[bin], 1U);
+
+            if(iteration == 0) {
+                bin_buffer[ID] = depth;
+            }
         }
         barrier();
 
-        // subgroup reductions and subgroup prefix sums
+        // prefix sum
         if (lID < RADIX_SORT_BINS) {
-            uint histogram_count = histogram[lID];
-            uint sum = subgroupAdd(histogram_count);
-            uint prefix_sum = subgroupExclusiveAdd(histogram_count);
-            local_offsets[lID] = prefix_sum;
-            if (subgroupElect()) {
-                // one thread inside the warp/subgroup enters this section
-                sums[sID] = sum;
-            }
+            shared_data[lID] = histogram[lID];
         }
         barrier();
 
-        // global prefix sums (offsets)
-        if (sID == 0) {
-            uint offset = 0;
-            for (uint i = lsID; i < RADIX_SORT_BINS; i += SUBGROUP_SIZE) {
-                global_offsets[i] = offset + local_offsets[i];
-                offset += sums[i / SUBGROUP_SIZE];
-            }
-        }
-        barrier();
+        for (uint stride = 1; stride < WORKGROUP_SIZE; stride *= 2) {
+            uint value = 0;
 
-        //     ==== scatter keys according to global offsets =====
+            if (lID >= stride) {
+                value = shared_data[lID - stride];
+            }
+            barrier();
+
+            prefix_sums[lID] += value;
+            shared_data[lID] += value;
+        }
+
+        // scatter
         const uint flags_bin = lID / 32;
         const uint flags_bit = 1 << (lID % 32);
 
-        for (uint blockID = 0; blockID < g_num_elements; blockID += WORKGROUP_SIZE) {
+        if(lID < RADIX_SORT_BINS) {
+            global_offsets[lID] = 0U;
+        }
+        barrier();
+
+        for (uint blockID = 0; blockID < num_elements; blockID += WORKGROUP_SIZE) {
             barrier();
 
             const uint ID = blockID + lID;
@@ -109,20 +114,21 @@ void main() {
             }
             barrier();
 
-            uint index_in = 0;
+            uint element = 0;
             uint binID = 0;
             uint binOffset = 0;
-            if (ID < g_num_elements) {
-                index_in = ELEMENT_IN(ID, iteration);
-                binID = uint((FloatToUint(depths[index_in]) >> shift)) & uint(RADIX_SORT_BINS - 1);
+            if (ID < num_elements) {
+                element = ELEMENT_IN(ID, iteration);
+                uint depth = my_uint_cast(depths[element]);
+                binID = uint(depth >> shift) & uint(RADIX_SORT_BINS - 1);
                 // offset for group
-                binOffset = global_offsets[binID];
+                global_offsets[lID] = prefix_sums[binID];
                 // add bit to flag
                 atomicAdd(bin_flags[binID].flags[flags_bin], flags_bit);
             }
             barrier();
 
-            if (ID < g_num_elements) {
+            if (ID < num_elements) {
                 // calculate output index of element
                 uint prefix = 0;
                 uint count = 0;
@@ -135,12 +141,12 @@ void main() {
                     count += full_count;
                 }
                 if (iteration % 2 == 0) {
-                    g_elements_out[binOffset + prefix] = index_in;
+                    index_out[global_offsets[lID] + prefix] = element;
                 } else {
-                    g_elements_in[binOffset + prefix] = index_in;
+                    index_in[global_offsets[lID] + prefix] = element;
                 }
                 if (prefix == count - 1) {
-                    atomicAdd(global_offsets[binID], count);
+                    atomicAdd(prefix_sums[binID], count);
                 }
             }
         }

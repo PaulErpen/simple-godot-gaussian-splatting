@@ -15,7 +15,7 @@ layout(set = 0, binding = 1) buffer Vertices {
 
 // Output depth buffer
 layout(set = 0, binding = 2) buffer DepthBuffer {
-    float depths[];
+    uint depths[];
 };
 
 layout(set = 0, binding = 3) buffer ProjectionMatrix {
@@ -39,5 +39,7 @@ void main() {
     vec4 projected_vertex = projection_matrix * (model_view_matrix * vertex);
     
     // Write depth value to the buffer
-    depths[idx] = length(projected_vertex.xyz);
+    //depths[idx] = length(projected_vertex.xyz);
+    //depths[idx] = uintBitsToFloat(idx % 256u);
+    depths[idx] = idx;
 }
