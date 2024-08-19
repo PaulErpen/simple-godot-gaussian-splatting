@@ -488,7 +488,7 @@ func sort_splats_by_depth(model_view_matrix: Transform3D, main_camera_projection
 	
 	# DEBUG
 	var depths_file = FileAccess.open("res://debug_depths.txt", FileAccess.WRITE)
-	var deth_buffer_data = rd.buffer_get_data(depth_buffer).to_int32_array()
+	var deth_buffer_data = rd.buffer_get_data(depth_buffer).to_float32_array()
 	depths_file.store_string(str(deth_buffer_data))
 	depths_file.close()
 	

@@ -25,7 +25,7 @@ layout (set = 0, binding = 1) buffer elements_out {
 };
 
 layout(set = 0, binding = 2) buffer DepthBuffer {
-    uint depths[];
+    float depths[];
 };
 
 layout(set = 0, binding = 3) buffer BinBuffer {
@@ -50,8 +50,8 @@ shared BinFlags[RADIX_SORT_BINS] bin_flags;
 
 #define ASSERT(cond, identifier) if (!(cond)) {  debug_buffer[0] = identifier; }
 
-uint my_uint_cast(uint f) { 
-    return f;
+uint my_uint_cast(float f) { 
+    return uint(f);
 }
 
 void main() {
