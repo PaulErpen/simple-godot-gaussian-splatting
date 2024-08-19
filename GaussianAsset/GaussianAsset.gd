@@ -35,10 +35,6 @@ var sort_pipeline: RID
 var texture_projection_uniform_set: RID
 var texture_projection_pipeline: RID
 
-#temporary for debugging
-var bin_buffer_buffer: RID
-var debug_buffer: RID
-
 var means_image_texture: ImageTexture
 var dc_image_texture: ImageTexture
 var sh1_1_image_texture: ImageTexture
@@ -145,30 +141,11 @@ func setup_sort_pipeline():
 	depth_index_out_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
 	depth_index_out_uniform.binding = 1
 	depth_index_out_uniform.add_id(depth_index_out_buffer)
-
-	# debug buffers
-	var bin_buffer_bytes = PackedByteArray()
-	bin_buffer_bytes.resize(n_splats * 4)
-	bin_buffer_buffer = rd.storage_buffer_create(bin_buffer_bytes.size(), bin_buffer_bytes)
-	var bin_buffer_uniform := RDUniform.new()
-	bin_buffer_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
-	bin_buffer_uniform.binding = 3
-	bin_buffer_uniform.add_id(bin_buffer_buffer)
-	
-	var debug_bytes = PackedByteArray()
-	debug_bytes.resize(1 * 4)
-	debug_buffer = rd.storage_buffer_create(debug_bytes.size(), debug_bytes)
-	var debug_uniform := RDUniform.new()
-	debug_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
-	debug_uniform.binding = 4
-	debug_uniform.add_id(debug_buffer)
 	
 	var sort_bindings = [
 		depth_index_in_uniform,
 		depth_index_out_uniform,
-		depth_uniform,
-		bin_buffer_uniform,
-		debug_uniform
+		depth_uniform
 	]
 	sort_uniform_set = rd.uniform_set_create(sort_bindings, sort_shader, 0)
 	sort_pipeline = rd.compute_pipeline_create(sort_shader)
@@ -486,12 +463,6 @@ func sort_splats_by_depth(model_view_matrix: Transform3D, main_camera_projection
 	
 	rd.compute_list_add_barrier(compute_list)
 	
-	# DEBUG
-	var depths_file = FileAccess.open("res://debug_depths.txt", FileAccess.WRITE)
-	var deth_buffer_data = rd.buffer_get_data(depth_buffer).to_float32_array()
-	depths_file.store_string(str(deth_buffer_data))
-	depths_file.close()
-	
 	rd.compute_list_bind_compute_pipeline(compute_list, sort_pipeline)
 	var push_constants_sort = PackedInt32Array([n_splats, 0])
 	rd.compute_list_set_push_constant(compute_list, push_constants_sort.to_byte_array(), push_constants_sort.size() * 8)
@@ -499,19 +470,6 @@ func sort_splats_by_depth(model_view_matrix: Transform3D, main_camera_projection
 	rd.compute_list_dispatch(compute_list, 1, 1, 1)
 	rd.compute_list_add_barrier(compute_list)
 
-	# DEBUG
-	var bin_file = FileAccess.open("res://debug_bin.txt", FileAccess.WRITE)
-	var bin_buffer_data = rd.buffer_get_data(bin_buffer_buffer).to_int32_array()
-	bin_file.store_string(str(bin_buffer_data))
-	bin_file.close()
-
-	var sort_out_file = FileAccess.open("res://sort_out.txt", FileAccess.WRITE)
-	var sort_out_buffer_data = rd.buffer_get_data(depth_index_in_buffer).to_int32_array()
-	sort_out_file.store_string(str(sort_out_buffer_data))
-	sort_out_file.close()
-	
-	print("shader error: " + str(rd.buffer_get_data(debug_buffer).to_int32_array()[0]))
-	
 	rd.compute_list_bind_compute_pipeline(compute_list, texture_projection_pipeline)
 	var push_constants_projection = PackedInt32Array([n_splats, 0])
 	rd.compute_list_set_push_constant(compute_list, push_constants_projection.to_byte_array(), push_constants_projection.size() * 8)

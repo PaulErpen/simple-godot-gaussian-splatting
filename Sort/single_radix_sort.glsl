@@ -28,14 +28,6 @@ layout(set = 0, binding = 2) buffer DepthBuffer {
     float depths[];
 };
 
-layout(set = 0, binding = 3) buffer BinBuffer {
-    uint bin_buffer[];
-};
-
-layout(set = 0, binding = 4) buffer DebugBuffer {
-    uint debug_buffer[];
-};
-
 shared uint[RADIX_SORT_BINS] histogram;
 shared uint[RADIX_SORT_BINS] prefix_sums;
 shared uint[WORKGROUP_SIZE] shared_data;
@@ -47,8 +39,6 @@ struct BinFlags {
 shared BinFlags[RADIX_SORT_BINS] bin_flags;
 
 #define ELEMENT_IN(index, iteration) (iteration % 2 == 0 ? index_in[index] : index_out[index])
-
-#define ASSERT(cond, identifier) if (!(cond)) {  debug_buffer[0] = identifier; }
 
 uint my_uint_cast(float f) { 
     return floatBitsToUint(f);
@@ -73,12 +63,6 @@ void main() {
             uint bin = (depth >> shift) & (RADIX_SORT_BINS - 1);
             // increment the histogram
             atomicAdd(histogram[bin], 1U);
-
-            ASSERT(bin < RADIX_SORT_BINS, 123010);
-
-            if(iteration == 0) {
-                bin_buffer[ID] = element;
-            }
         }
         barrier();
 
@@ -102,8 +86,6 @@ void main() {
             barrier();
         }
 
-        ASSERT(prefix_sums[0] == 0, 9823898);
-        ASSERT(prefix_sums[RADIX_SORT_BINS - 1] + histogram[RADIX_SORT_BINS - 1] == num_elements, 98279728);
 
         // scatter
         const uint flags_bin = lID / 32;
@@ -153,8 +135,6 @@ void main() {
                     prefix += (i == flags_bin) ? partial_count : 0U;
                     count += full_count;
                 }
-                ASSERT(global_offsets[lID] < num_elements, 17288187);
-                ASSERT(global_offsets[lID] + prefix < num_elements, 38728732);
                 if (iteration % 2 == 0) {
                     index_out[global_offsets[lID] + prefix] = element;
                 } else {
@@ -165,7 +145,5 @@ void main() {
                 }
             }
         }
-        barrier(); // Only here because of assertion
-        ASSERT(prefix_sums[RADIX_SORT_BINS - 1] == num_elements, 98274387);
     }
 }
