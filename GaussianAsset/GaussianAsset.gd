@@ -469,6 +469,8 @@ func sort_splats_by_depth(model_view_matrix: Transform3D, main_camera_projection
 	var projection_threads_per_workgroup = max(1, n_splats / 256 + 1)
 	var compute_list := rd.compute_list_begin()
 	rd.compute_list_bind_compute_pipeline(compute_list, projection_pipeline)
+	var push_constants_depth = PackedInt32Array([n_splats, 0])
+	rd.compute_list_set_push_constant(compute_list, push_constants_depth.to_byte_array(), push_constants_depth.size() * 8)
 	rd.compute_list_bind_uniform_set(compute_list, projection_uniform_set, 0)
 	rd.compute_list_dispatch(compute_list, projection_threads_per_workgroup, 1, 1)
 	

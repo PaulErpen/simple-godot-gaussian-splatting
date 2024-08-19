@@ -22,24 +22,20 @@ layout(set = 0, binding = 3) buffer ProjectionMatrix {
     mat4 projection_matrix;
 };
 
-float sigmoid(float x) {
-    return 1.0 / (1.0 + exp(-x));
-}
+layout (push_constant, std430) uniform PushConstants {
+    uint num_elements;
+};
 
 void main() {
     uint idx = gl_GlobalInvocationID.x;
     
-    if(idx >= depths.length()) {
-        return;
+    if(idx < num_elements) {
+        vec4 vertex = vec4(vertices[idx * 3], vertices[idx * 3 + 1], vertices[idx * 3 + 2], 1.0);
+    
+        // Apply model-view-projection matrix
+        vec4 projected_vertex = projection_matrix * (model_view_matrix * vertex);
+        
+        // Write depth value to the buffer
+        depths[idx] = (num_elements - idx) % 1000;
     }
-
-    vec4 vertex = vec4(vertices[idx * 3], vertices[idx * 3 + 1], vertices[idx * 3 + 2], 1.0);
-    
-    // Apply model-view-projection matrix
-    vec4 projected_vertex = projection_matrix * (model_view_matrix * vertex);
-    
-    // Write depth value to the buffer
-    //depths[idx] = length(projected_vertex.xyz);
-    //depths[idx] = uintBitsToFloat(idx % 256u);
-    depths[idx] = idx;
 }
