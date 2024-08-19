@@ -1,6 +1,6 @@
 // Adapted from: https://github.com/haztro/godot-gaussian-splatting/blob/main/shaders/splat.glsl
 shader_type spatial;
-render_mode unshaded, cull_back;
+render_mode unshaded;
 
 // splat data
 uniform sampler2D depth_index_sampler;
@@ -211,6 +211,18 @@ vec3 computeColorFromSH(int deg, vec3 pos, vec3 cam_pos, vec3 sh[16]) {
 	return max(result, 0.0f);
 }
 
+vec3 srgb_to_linear(vec3 srgb_color) {
+    vec3 linear_color;
+    for (int i = 0; i < 3; i++) {
+        if (srgb_color[i] <= 0.04045) {
+            linear_color[i] = srgb_color[i] / 12.92;
+        } else {
+            linear_color[i] = pow((srgb_color[i] + 0.055) / 1.055, 2.4);
+        }
+    }
+    return linear_color;
+}
+
 void vertex() {
 	int depth_index = retrieve_depth_index(INSTANCE_ID);
 	ivec2 index = ivec2(depth_index % texture_size, int(depth_index / texture_size));
@@ -252,7 +264,7 @@ void vertex() {
 				color = vec3(idx_color, 1.0 - idx_color, 0.0);
 			} else {
 				vec3[16] sh = retrieve_spherical_harmonics_coef(index);
-				color = computeColorFromSH(sh_degree, mu, vec3(VIEW_MATRIX[3].xyz), sh);
+				color = srgb_to_linear(computeColorFromSH(sh_degree, mu, vec3(VIEW_MATRIX[3].xyz), sh));
 			}
 			
 			vConic = conic;
@@ -276,7 +288,7 @@ void fragment() {
 
 	float alpha = min(0.99, opacity * exp(power));
 	
-	if (alpha < 1.0/255.0) {
+	if (alpha < 10.0/255.0) {
 		discard;
 	}
 
