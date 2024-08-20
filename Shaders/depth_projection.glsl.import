@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://c1xsesnweslmk"
+path="res://.godot/imported/depth_projection.glsl-fa2a65d3659415bebc83dd1fcf949dd4.res"
+
+[deps]
+
+source_file="res://Shaders/depth_projection.glsl"
+dest_files=["res://.godot/imported/depth_projection.glsl-fa2a65d3659415bebc83dd1fcf949dd4.res"]
+
+[params]
+

@@ -1,10 +1,12 @@
 #[compute]
 #version 450
 
+#define N_PROPERTIES 62
+
 layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
 // Model-view matrix
-layout(set = 0, binding = 0) buffer ModelView {
+layout(set = 0, binding = 4) buffer ModelView {
     mat4 model_view_matrix;
 };
 
@@ -30,7 +32,8 @@ void main() {
     uint idx = gl_GlobalInvocationID.x;
     
     if(idx < num_elements) {
-        vec4 vertex = vec4(vertices[idx * 3], vertices[idx * 3 + 1], vertices[idx * 3 + 2], 1.0);
+        uint property_index = N_PROPERTIES * idx;
+        vec4 vertex = vec4(vertices[property_index], vertices[property_index + 1], vertices[property_index + 2], 1.0);
     
         // Apply model-view-projection matrix
         vec4 projected_vertex = projection_matrix * (model_view_matrix * vertex);
