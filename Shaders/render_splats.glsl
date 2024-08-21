@@ -177,18 +177,6 @@ vec3 computeColorFromSH(int deg, vec3 pos, vec3 cam_pos, vec3 sh[16]) {
 	return max(result, 0.0f);
 }
 
-vec3 srgb_to_linear(vec3 srgb_color) {
-    vec3 linear_color;
-    for (int i = 0; i < 3; i++) {
-        if (srgb_color[i] <= 0.04045) {
-            linear_color[i] = srgb_color[i] / 12.92;
-        } else {
-            linear_color[i] = pow((srgb_color[i] + 0.055) / 1.055, 2.4);
-        }
-    }
-    return linear_color;
-}
-
 void main() {
 	uint depth_index = depth_index[n_splats - gl_InstanceIndex - 1];
     uint idx = depth_index * N_PROPERTIES;

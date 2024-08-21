@@ -3,13 +3,25 @@ render_mode unshaded;
 
 uniform sampler2D rendered_image_texture;
 
+vec3 srgb_to_linear(vec3 srgb_color) {
+    vec3 linear_color;
+    for (int i = 0; i < 3; i++) {
+        if (srgb_color[i] <= 0.04045) {
+            linear_color[i] = srgb_color[i] / 12.92;
+        } else {
+            linear_color[i] = pow((srgb_color[i] + 0.055) / 1.055, 2.4);
+        }
+    }
+    return linear_color;
+}
+
 void vertex() {
 	// Called for every vertex the material is visible on.
 }
 
 void fragment() {
 	vec4 tex_val = texture(rendered_image_texture, vec2(1.0, 1.0) - SCREEN_UV);
-	ALBEDO = tex_val.rgb;
+	ALBEDO = srgb_to_linear(tex_val.rgb);
 	ALPHA = tex_val.a;
 }
 
