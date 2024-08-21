@@ -6,6 +6,7 @@
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_eklfx"]
 render_priority = 0
 shader = ExtResource("4_cph7a")
+shader_parameter/show_aabb = null
 
 [sub_resource type="BoxMesh" id="BoxMesh_ami2c"]
 material = SubResource("ShaderMaterial_eklfx")

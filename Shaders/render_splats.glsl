@@ -38,7 +38,6 @@ layout(set = 0, binding = 4) buffer ModelView {
 layout (push_constant, std430) uniform PushConstants {
     uint n_splats;
     uint shade_depth_texture;
-    uint show_aabb;
 };
 
 //varyings

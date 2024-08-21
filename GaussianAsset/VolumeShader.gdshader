@@ -1,6 +1,7 @@
 shader_type spatial;
 render_mode unshaded;
 
+uniform bool show_aabb;
 uniform sampler2D rendered_image_texture;
 
 vec3 srgb_to_linear(vec3 srgb_color) {
@@ -22,7 +23,9 @@ void vertex() {
 void fragment() {
 	vec4 tex_val = texture(rendered_image_texture, vec2(1.0, 1.0) - SCREEN_UV);
 	ALBEDO = srgb_to_linear(tex_val.rgb);
-	ALPHA = tex_val.a;
+	if(!show_aabb) {
+		ALPHA = tex_val.a;
+	}
 }
 
 //void light() {

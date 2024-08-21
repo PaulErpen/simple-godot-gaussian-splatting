@@ -10,7 +10,7 @@ var show_aabb: bool = false
 func _on_aabb_toggled(toggled_on):
 	if targets != null:
 		for target in targets:
-			target.show_aabb = toggled_on
+			target.volume.mesh.material.set_shader_parameter("show_aabb", toggled_on)
 	aabb_checkbox.release_focus()
 
 func _on_depth_toggled(toggled_on):
