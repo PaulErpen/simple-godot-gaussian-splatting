@@ -1,4 +1,5 @@
 shader_type spatial;
+render_mode unshaded;
 
 uniform sampler2D rendered_image_texture;
 
@@ -7,7 +8,7 @@ void vertex() {
 }
 
 void fragment() {
-	vec4 tex_val = texture(rendered_image_texture, SCREEN_UV);
+	vec4 tex_val = texture(rendered_image_texture, vec2(1.0, 1.0) - SCREEN_UV);
 	ALBEDO = tex_val.rgb;
 	//ALPHA = tex_val.a;
 }

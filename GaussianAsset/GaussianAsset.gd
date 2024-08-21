@@ -114,8 +114,13 @@ func load_gaussians(path: String):
 	
 	
 	# TODO: enable AABB
-	# multi_mesh_instance.custom_aabb = AABB(aabb_position, abs(aabb_position) + aabb_size)
-	# print("AABB: " + str(multi_mesh_instance.custom_aabb))
+	var aabb = AABB(aabb_position, abs(aabb_position) + aabb_size)
+	print("AABB: " + str(aabb))
+
+	var volumne_transform = Transform3D()
+	volumne_transform = volumne_transform.scaled(aabb.size)
+	volumne_transform = volumne_transform.translated(aabb.get_center())
+	volume.transform = volumne_transform
 	
 	ply_file.close()
 	print("Finished Loading Gaussian Asset")
@@ -367,7 +372,7 @@ func get_model_view_matrix() -> Transform3D:
 	
 	return view_matrix * model_matrix
 
-func update_params_buffer():	
+func update_params_buffer():
 	var tan_fovy = tan(deg_to_rad($Camera.fov) * 0.5)
 	var tan_fovx = tan_fovy * get_viewport().size.x / get_viewport().size.y
 	var focal_y = get_viewport().size.y / (2 * tan_fovy)
@@ -417,6 +422,8 @@ func sort():
 	rd.sync()
 
 func render():
+	update_camera_buffers()
+	
 	var draw_list := rd.draw_list_begin(framebuffer, 
 		RenderingDevice.INITIAL_ACTION_CLEAR, 
 		RenderingDevice.FINAL_ACTION_READ, 

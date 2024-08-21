@@ -207,6 +207,7 @@ void main() {
 
     //noramlized device coordinates
     vec4 ndc = clipSpace / clipSpace.w;
+    ndc.x *= -1;    // Not sure why i need this tbh
 		
     //conic of covariance calculation
     vec3 cov2d = computeCov2D(mu, scale, rot, model_view_matrix);
