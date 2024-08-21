@@ -38,6 +38,7 @@ layout(set = 0, binding = 4) buffer ModelView {
 layout (push_constant, std430) uniform PushConstants {
     uint n_splats;
     uint shade_depth_texture;
+    uint show_aabb;
 };
 
 //varyings
@@ -227,7 +228,7 @@ void main() {
     vec2 point_image = vec2(ndc2Pix(ndc.x, params.viewport_size.x), ndc2Pix(ndc.y, params.viewport_size.y));
 
     if (shade_depth_texture == 1) {
-        float idx_color = float(gl_InstanceIndex) / float(n_splats);
+        float idx_color = float(depth_index) / float(n_splats);
         color = vec3(idx_color, 1.0 - idx_color, 0.0);
     } else {
         vec3 sh[16];
@@ -268,6 +269,6 @@ void main() {
 		discard;
 	}
 
-	frag_color = vec4(color.rgb, alpha);
+	frag_color = vec4(color.rgb * alpha, alpha);
 }
 

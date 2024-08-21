@@ -14,6 +14,7 @@ var vertices: PackedFloat32Array
 var n_properties: int
 var sh_degree: int
 var shade_depth_texture: bool = false
+var show_aabb: bool = false
 var modifier = 1.0
 
 # Pipeline
@@ -432,8 +433,13 @@ func render():
 	rd.draw_list_bind_render_pipeline(draw_list, render_splats_pipeline)
 	rd.draw_list_bind_uniform_set(draw_list, render_splats_uniform_set, 0)
 	rd.draw_list_bind_vertex_array(draw_list, vertex_array)
-	var push_constants = PackedInt32Array([n_splats, 1 if shade_depth_texture else 0])
-	rd.draw_list_set_push_constant(draw_list, push_constants.to_byte_array(), push_constants.size() * 8)
+	var push_constants = PackedInt32Array([
+		n_splats, 
+		1 if shade_depth_texture else 0,  
+		1 if show_aabb else 0,
+		0
+	])
+	rd.draw_list_set_push_constant(draw_list, push_constants.to_byte_array(), push_constants.size() * 4)
 	rd.draw_list_draw(draw_list, false, n_splats)
 	rd.draw_list_end(RenderingDevice.BARRIER_MASK_VERTEX)
 	
@@ -441,4 +447,7 @@ func render():
 	var image_size = get_viewport().size
 	var image := Image.create_from_data(image_size.x, image_size.y, false, Image.FORMAT_RGBAF, byte_data)
 	rendered_image_texture.update(image)
+	
+	assert(byte_data.size() == image_size.x * image_size.y * 4 * 4)
+	
 	volume.mesh.material.set_shader_parameter("rendered_image_texture", rendered_image_texture)

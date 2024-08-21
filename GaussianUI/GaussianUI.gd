@@ -10,16 +10,16 @@ var show_aabb: bool = false
 func _on_aabb_toggled(toggled_on):
 	if targets != null:
 		for target in targets:
-			target.get_node("AABB").set_visible(toggled_on)
+			target.show_aabb = toggled_on
 	aabb_checkbox.release_focus()
 
 func _on_depth_toggled(toggled_on):
 	if targets != null:
 		for target in targets:
-			target.get_node("MultiMeshInstance3D").multimesh.mesh.material.set_shader_parameter("shade_depth_texture", toggled_on)
+			target.shade_depth_texture = toggled_on
 	depth_checkbox.release_focus()
 
 func _on_trigger_sort_button_pressed():
 	if targets != null:
 		for target in targets:
-			target.call_sort()
+			target.sort()
