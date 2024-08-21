@@ -113,7 +113,6 @@ func load_gaussians(path: String):
 		)
 	
 	
-	# TODO: enable AABB
 	var aabb = AABB(aabb_position, abs(aabb_position) + aabb_size)
 	print("AABB: " + str(aabb))
 
@@ -330,7 +329,7 @@ func _initialise_framebuffer_format():
 	attachment_format.set_format(tex_format.format)
 	attachment_format.set_samples(RenderingDevice.TEXTURE_SAMPLES_1)
 	attachment_format.usage_flags = RenderingDevice.TEXTURE_USAGE_COLOR_ATTACHMENT_BIT | RenderingDevice.TEXTURE_USAGE_CAN_COPY_FROM_BIT
-	attachments.push_back(attachment_format)	
+	attachments.push_back(attachment_format)
 	var framebuf_format = rd.framebuffer_format_create(attachments)
 	return framebuf_format
 
