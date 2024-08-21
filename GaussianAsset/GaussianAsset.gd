@@ -57,7 +57,8 @@ func _process(_delta):
 		sort()
 		last_direction = direction
 	
-	render()
+	if is_visible_in_tree():
+		render()
 
 func load_header(path: String):
 	var ply_file = FileAccess.open(path, FileAccess.READ)
