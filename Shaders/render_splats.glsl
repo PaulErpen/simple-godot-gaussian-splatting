@@ -190,7 +190,7 @@ vec3 srgb_to_linear(vec3 srgb_color) {
 }
 
 void main() {
-	uint depth_index = n_splats - depth_index[gl_InstanceIndex] - 1;
+	uint depth_index = depth_index[n_splats - gl_InstanceIndex - 1];
     uint idx = depth_index * N_PROPERTIES;
     vec3 mu = vec3(vertices[idx], vertices[idx + 1], vertices[idx + 2]);
 
