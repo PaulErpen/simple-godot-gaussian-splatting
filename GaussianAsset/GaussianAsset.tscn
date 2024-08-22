@@ -15,6 +15,7 @@ material = SubResource("ShaderMaterial_bi8tn")
 
 [node name="GaussianAsset" type="Node3D"]
 script = ExtResource("1_ttjwb")
+near_cull_distance = 0.25
 
 [node name="MultiMeshInstance3D" type="MultiMeshInstance3D" parent="."]
 

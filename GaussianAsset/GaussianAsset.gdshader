@@ -7,6 +7,7 @@ uniform sampler2D depth_index_sampler;
 uniform int n_splats;
 uniform int sh_degree;
 uniform int texture_size;
+uniform float near_cull_distance;
 
 uniform sampler2D means_sampler;
 uniform sampler2D dc_sampler;
@@ -228,51 +229,56 @@ void vertex() {
 	ivec2 index = ivec2(depth_index % texture_size, int(depth_index / texture_size));
 	// retrieve data from texture
 	vec3 mu = texelFetch(means_sampler, index, 0).xyz;
-	opacity = sigmoid(texelFetch(opa_scale_sampler, index, 0).r);
-	vec3 scale = texelFetch(opa_scale_sampler, index, 0).gba;
-	vec4 rot = texelFetch(rot_sampler, index, 0).xyzw;
 	
 	//calculate clip space position and culling
 	vec4 clipSpace = PROJECTION_MATRIX * MODELVIEW_MATRIX * vec4(mu, 1.0);
     float clip = 1.2 * clipSpace.w;
     if (clipSpace.z < -clip || clipSpace.z > clip || clipSpace.x < -clip || clipSpace.x > clip || clipSpace.y < -clip || clipSpace.y > clip) {
         POSITION = vec4(0, 0, 2, 1);
-    } else 
-	{
-		//noramlized device coordinates
-		vec4 ndc = clipSpace / clipSpace.w;
-		
-		//conic of covariance calculation
-		vec3 cov2d = computeCov2D(mu, scale, rot, MODELVIEW_MATRIX);
-		float det = cov2d.x * cov2d.z - cov2d.y * cov2d.y;
-	    if (det == 0.) {
-	        POSITION = vec4(0, 0, 2, 1);
-	    } else {
-			float det_inv = 1.0 / det;
-			vec3 conic = vec3(cov2d.z * det_inv, -cov2d.y * det_inv, cov2d.x * det_inv);
-			float mid = 0.5 * (cov2d.x + cov2d.z);
+    } else {
+		// near culling
+		float dist_to_cam = abs((MODELVIEW_MATRIX * vec4(mu, 1.0)).z);
+		if (dist_to_cam < near_cull_distance) {
+			POSITION = vec4(0, 0, 2, 1);
+		} else {
+			opacity = sigmoid(texelFetch(opa_scale_sampler, index, 0).r);
+			vec3 scale = texelFetch(opa_scale_sampler, index, 0).gba;
+			vec4 rot = texelFetch(rot_sampler, index, 0).xyzw;
+			//noramlized device coordinates
+			vec4 ndc = clipSpace / clipSpace.w;
 			
-			// compute eigenvalues
-			float lambda_1 = mid + sqrt(max(0.1, mid * mid - det));
-    		float lambda_2 = mid - sqrt(max(0.1, mid * mid - det));
-			float radius_px = ceil(3. * sqrt(max(lambda_1, lambda_2)));
-			// compute pixel in image space
-    		vec2 point_image = vec2(ndc2Pix(ndc.x, viewport_size.x), ndc2Pix(ndc.y, viewport_size.y));
-			
-			if (shade_depth_texture) {
-				float idx_color = float(INSTANCE_ID) / float(n_splats);
-				color = vec3(idx_color, 1.0 - idx_color, 0.0);
+			//conic of covariance calculation
+			vec3 cov2d = computeCov2D(mu, scale, rot, MODELVIEW_MATRIX);
+			float det = cov2d.x * cov2d.z - cov2d.y * cov2d.y;
+			if (det == 0.) {
+				POSITION = vec4(0, 0, 2, 1);
 			} else {
-				vec3[16] sh = retrieve_spherical_harmonics_coef(index);
-				color = srgb_to_linear(computeColorFromSH(sh_degree, mu, vec3(VIEW_MATRIX[3].xyz), sh));
+				float det_inv = 1.0 / det;
+				vec3 conic = vec3(cov2d.z * det_inv, -cov2d.y * det_inv, cov2d.x * det_inv);
+				float mid = 0.5 * (cov2d.x + cov2d.z);
+				
+				// compute eigenvalues
+				float lambda_1 = mid + sqrt(max(0.1, mid * mid - det));
+				float lambda_2 = mid - sqrt(max(0.1, mid * mid - det));
+				float radius_px = ceil(3. * sqrt(max(lambda_1, lambda_2)));
+				// compute pixel in image space
+				vec2 point_image = vec2(ndc2Pix(ndc.x, viewport_size.x), ndc2Pix(ndc.y, viewport_size.y));
+				
+				if (shade_depth_texture) {
+					float idx_color = float(INSTANCE_ID) / float(n_splats);
+					color = vec3(idx_color, 1.0 - idx_color, 0.0);
+				} else {
+					vec3[16] sh = retrieve_spherical_harmonics_coef(index);
+					color = srgb_to_linear(computeColorFromSH(sh_degree, mu, vec3(VIEW_MATRIX[3].xyz), sh));
+				}
+				
+				vConic = conic;
+				
+				vec2 corner = vec2(float((VERTEX_ID << 1) & 2), float(VERTEX_ID & 2)) - 1.;
+				vec2 screen_pos = point_image + radius_px * corner;
+				vUv = point_image - screen_pos;
+				POSITION = vec4(screen_pos / viewport_size * 2.0 - 1.0, ndc.z, 1);
 			}
-			
-			vConic = conic;
-			
-			vec2 corner = vec2(float((VERTEX_ID << 1) & 2), float(VERTEX_ID & 2)) - 1.;
-			vec2 screen_pos = point_image + radius_px * corner;
-			vUv = point_image - screen_pos;
-			POSITION = vec4(screen_pos / viewport_size * 2.0 - 1.0, ndc.z, 1);
 		}
 	}
 }

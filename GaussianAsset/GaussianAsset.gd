@@ -3,6 +3,7 @@ extends Node3D
 
 @export var ply_path: String = "res://ply_files/lego.ply"
 @export var max_vertices: int = 16384 ** 2
+@export var near_cull_distance: float = 0.1
 
 @onready var multi_mesh_instance = $MultiMeshInstance3D
 @onready var main_camera = get_viewport().get_camera_3d()
@@ -207,7 +208,7 @@ func _process(_delta):
 	var angle = last_direction.dot(direction) if last_direction != null else 0.0
 	
 	# Only re-sort if camera has changed enough
-	if angle < 0.8:
+	if angle < 0.8 and multi_mesh_instance.is_visible_in_tree():
 		call_sort()
 		last_direction = direction
 
@@ -215,7 +216,6 @@ func call_sort():
 	print("Sorting")
 	RenderingServer.call_on_render_thread(sort_splats_by_depth.bind(get_model_view_matrix(), main_camera.get_camera_projection()))
 
-# Thread must be disposed (or "joined"), for portability.
 func _exit_tree():
 	if depth_index_texture_rid != null:
 		RenderingServer.free_rid(depth_index_texture_rid)
@@ -441,6 +441,7 @@ func load_gaussians(path: String):
 	multi_mesh.mesh.material.set_shader_parameter("texture_size", texture_size)
 	multi_mesh.mesh.material.set_shader_parameter("modifier", 1.0)
 	multi_mesh.mesh.material.set_shader_parameter("shade_depth_texture", false)
+	multi_mesh.mesh.material.set_shader_parameter("near_cull_distance", near_cull_distance)
 	
 	var tan_fovy = tan(deg_to_rad(main_camera.fov) * 0.5)
 	var tan_fovx = tan_fovy * get_viewport().size.x / get_viewport().size.y
