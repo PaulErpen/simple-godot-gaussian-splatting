@@ -48,6 +48,12 @@ theme_override_font_sizes/normal_font_size = 13
 text = "FPS: 	"
 fit_content = true
 
+[node name="ModifierLabel" type="RichTextLabel" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/normal_font_size = 14
+text = "Scale modifier: 	"
+fit_content = true
+
 [node name="ControlsLabel" type="RichTextLabel" parent="PanelContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/normal_font_size = 13
