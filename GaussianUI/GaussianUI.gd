@@ -6,6 +6,10 @@ var show_aabb: bool = false
 
 @onready var aabb_checkbox = $PanelContainer/VBoxContainer/AABB
 @onready var depth_checkbox = $PanelContainer/VBoxContainer/Depth
+@onready var fps_label = $PanelContainer/VBoxContainer/FPSLabel
+
+func _process(delta):
+	fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
 
 func _on_aabb_toggled(toggled_on):
 	if targets != null:

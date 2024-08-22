@@ -42,7 +42,13 @@ custom_minimum_size = Vector2(3, 0)
 layout_mode = 2
 theme = SubResource("Theme_obdjm")
 
-[node name="RichTextLabel" type="RichTextLabel" parent="PanelContainer/VBoxContainer"]
+[node name="FPSLabel" type="RichTextLabel" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/normal_font_size = 13
+text = "FPS: 	"
+fit_content = true
+
+[node name="ControlsLabel" type="RichTextLabel" parent="PanelContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/normal_font_size = 13
 text = "Toggle mouse capture with \"Alt\""
