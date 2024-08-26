@@ -274,7 +274,7 @@ void vertex() {
 				
 				vConic = conic;
 				
-				vec2 corner = vec2(float((VERTEX_ID << 1) & 2), float(VERTEX_ID & 2)) - 1.;
+				vec2 corner = VERTEX.xz;
 				vec2 screen_pos = point_image + radius_px * corner;
 				vUv = point_image - screen_pos;
 				POSITION = vec4(screen_pos / viewport_size * 2.0 - 1.0, ndc.z, 1);
