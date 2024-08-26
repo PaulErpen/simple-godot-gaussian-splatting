@@ -42,7 +42,7 @@ mesh = SubResource("CapsuleMesh_5ggwy")
 transform = Transform3D(0.965926, -1.13133e-08, 0.258819, -0.258819, -4.2222e-08, 0.965926, 0, -1, -4.37114e-08, 4, 3.24336, 0)
 
 [node name="GaussianAsset" parent="." instance=ExtResource("1_2yj05")]
-transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 1.65766, 0.458609, -3.67995)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.65766, 0.458609, -3.67995)
 ply_path = "res://ply_files/example_model.ply"
 max_vertices = 16385
 
