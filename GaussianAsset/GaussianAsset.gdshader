@@ -288,18 +288,11 @@ void fragment() {
 	vec3 conic = vConic;
 	float power = -0.5 * (conic.x * d.x * d.x + conic.z * d.y * d.y) + conic.y * d.x * d.y;
 	
-	if (power > 0.0) {
+	if (exp(power) > 0.04 && exp(power) < 0.05) {
+		ALBEDO = color.rgb;
+	} else {
 		discard;
 	}
-
-	float alpha = min(0.99, opacity * exp(power));
-	
-	if (alpha < 1.0/255.0) {
-		discard;
-	}
-
-	ALBEDO = color.rgb;
-	ALPHA = alpha;
 }
 
 //void light() {
