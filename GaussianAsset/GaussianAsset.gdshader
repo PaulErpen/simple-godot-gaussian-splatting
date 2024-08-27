@@ -41,7 +41,7 @@ uniform bool shade_depth_texture;
 //varyings
 varying vec3 color;
 varying float opacity;
-varying vec3 vConic;
+varying vec2 vUv;
 
 const float SH_C0 = 0.28209479177387814;
 const float SH_C1 = 0.4886025119029199;
@@ -91,12 +91,12 @@ vec3 computeCov2D(vec3 position, vec3 log_scale, vec4 rot, mat4 viewMatrix) {
 
     vec4 t = viewMatrix * vec4(position, 1.0);
 
-    float limx = 1.3 * tan_fovx;
-    float limy = 1.3 * tan_fovy;
-    float txtz = t.x / t.z;
-    float tytz = t.y / t.z;
-    t.x = min(limx, max(-limx, txtz)) * t.z;
-    t.y = min(limy, max(-limy, tytz)) * t.z;
+    // float limx = 1.3 * tan_fovx;
+    // float limy = 1.3 * tan_fovy;
+    // float txtz = t.x / t.z;
+    // float tytz = t.y / t.z;
+    // t.x = min(limx, max(-limx, txtz)) * t.z;
+    // t.y = min(limy, max(-limy, tytz)) * t.z;
 
     mat4 J = mat4(
         vec4(focal_x / t.z, 0.0, -(focal_x * t.x) / (t.z * t.z), 0.0),
@@ -252,42 +252,48 @@ void vertex() {
 			if (det == 0.) {
 				POSITION = vec4(0, 0, 2, 1);
 			} else {
-				float det_inv = 1.0 / det;
-				vec3 conic = vec3(cov2d.z * det_inv, -cov2d.y * det_inv, cov2d.x * det_inv);
-				float mid = 0.5 * (cov2d.x + cov2d.z);
+				float a = cov2d.x;
+				float d = cov2d.z;
+				float b = cov2d.y;
+				float D = a * d - b * b;
+				float trace = a + d;
+				float traceOver2 = 0.5 * trace;
+				float term2 = sqrt(max(0.1f, traceOver2 * traceOver2 - D));
+				float eigenValue1 = traceOver2 + term2;
+				float eigenValue2 = traceOver2 - term2;
 				
-				// compute eigenvalues
-				float lambda_1 = mid + sqrt(max(0.1, mid * mid - det));
-				float lambda_2 = mid - sqrt(max(0.1, mid * mid - det));
 				
 				// compute the eigenvectors in image space
-				vec2 eigenvector_1 = normalize(vec2(cov2d.y, lambda_1 - cov2d.x));
+				vec2 eigenvector_1 = normalize(vec2(cov2d.y, eigenValue1 - cov2d.x));
 				// since the eigen vectors are orthogonal, we derive the second one from the first
 				vec2 eigenvector_2 = vec2(eigenvector_1.y, -eigenvector_1.x);
 
 				// basis vectors
-				vec2 basis_1 = eigenvector_1 * sqrt(lambda_1);
-				vec2 basis_2 = eigenvector_2 * sqrt(lambda_2);
+				vec2 basis_1 = eigenvector_1 * sqrt(eigenValue1);
+				vec2 basis_2 = eigenvector_2 * sqrt(eigenValue2);
 
+				vec2 basis_viewport = 1.0 / vec2(viewport_size.x, viewport_size.y);
+				vec2 inverse_focal_adjustment = vec2(1.0 / focal_x, 1.0 / focal_y);
+				//vec2 ndc_offset = VERTEX.xz * basis_viewport * inverse_focal_adjustment * 2.0;
+				//vec2 ndc_offset = vec2(VERTEX.xz * basis_1 + VERTEX.xz * basis_2);
 				vec2 ndc_offset = vec2(0.0, 0.0);
 
-				if(VERTEX.x == -1.0 && VERTEX.z == 1.0) {
-					ndc_offset = basis_1 - basis_2;
-				} else if(VERTEX.x == 1.0 && VERTEX.z == 1.0) {
-					ndc_offset = basis_1 + basis_2;
-				} else if(VERTEX.x == -1.0 && VERTEX.z == -1.0) {
-					ndc_offset = -basis_1 - basis_2;
-				} else if(VERTEX.x == 1.0 && VERTEX.z == -1.0) {
-					ndc_offset = -basis_1 + basis_2;
-				}
+				 if(VERTEX.x == -1.0 && VERTEX.z == 1.0) {
+				 	ndc_offset = basis_1 - basis_2;
+				 } else if(VERTEX.x == 1.0 && VERTEX.z == 1.0) {
+				 	ndc_offset = basis_1 + basis_2;
+				 } else if(VERTEX.x == -1.0 && VERTEX.z == -1.0) {
+				 	ndc_offset = -basis_1 - basis_2;
+				 } else if(VERTEX.x == 1.0 && VERTEX.z == -1.0) {
+				 	ndc_offset = -basis_1 + basis_2;
+				 }
+
+				 ndc_offset = ndc_offset * basis_viewport * 2.0 * sqrt(8.0);
 
 				// compute pixel in image space
-				vec2 point_image = vec2(ndc2Pix(ndc.x, viewport_size.x), ndc2Pix(ndc.y, viewport_size.y));
-				
-				vConic = conic;
-				
-				vec2 screen_pos = point_image + ndc_offset;
-				POSITION = vec4(screen_pos / viewport_size * 2.0 - 1.0, ndc.z, 1);
+				POSITION = vec4(ndc.xy + ndc_offset, ndc.z, 1);
+
+				vUv = VERTEX.xz;
 
 				if (shade_depth_texture) {
 					float idx_color = float(INSTANCE_ID) / float(n_splats);
@@ -302,7 +308,8 @@ void vertex() {
 }
 
 void fragment() {
-	ALBEDO = color.rgb;
+	//ALBEDO = color.rgb;
+	ALBEDO = vec3(length(vUv)) * color.rgb;
 }
 
 //void light() {
