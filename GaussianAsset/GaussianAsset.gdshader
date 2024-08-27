@@ -42,7 +42,6 @@ uniform bool shade_depth_texture;
 varying vec3 color;
 varying float opacity;
 varying vec3 vConic;
-varying vec2 vUv;
 
 const float SH_C0 = 0.28209479177387814;
 const float SH_C1 = 0.4886025119029199;
@@ -260,10 +259,36 @@ void vertex() {
 				// compute eigenvalues
 				float lambda_1 = mid + sqrt(max(0.1, mid * mid - det));
 				float lambda_2 = mid - sqrt(max(0.1, mid * mid - det));
-				float radius_px = ceil(3. * sqrt(max(lambda_1, lambda_2)));
+				
+				// compute the eigenvectors in image space
+				vec2 eigenvector_1 = normalize(vec2(cov2d.y, lambda_1 - cov2d.x));
+				// since the eigen vectors are orthogonal, we derive the second one from the first
+				vec2 eigenvector_2 = vec2(eigenvector_1.y, -eigenvector_1.x);
+
+				// basis vectors
+				vec2 basis_1 = eigenvector_1 * sqrt(lambda_1);
+				vec2 basis_2 = eigenvector_2 * sqrt(lambda_2);
+
+				vec2 ndc_offset = vec2(0.0, 0.0);
+
+				if(VERTEX.x == -1.0 && VERTEX.z == 1.0) {
+					ndc_offset = basis_1 - basis_2;
+				} else if(VERTEX.x == 1.0 && VERTEX.z == 1.0) {
+					ndc_offset = basis_1 + basis_2;
+				} else if(VERTEX.x == -1.0 && VERTEX.z == -1.0) {
+					ndc_offset = -basis_1 - basis_2;
+				} else if(VERTEX.x == 1.0 && VERTEX.z == -1.0) {
+					ndc_offset = -basis_1 + basis_2;
+				}
+
 				// compute pixel in image space
 				vec2 point_image = vec2(ndc2Pix(ndc.x, viewport_size.x), ndc2Pix(ndc.y, viewport_size.y));
 				
+				vConic = conic;
+				
+				vec2 screen_pos = point_image + ndc_offset;
+				POSITION = vec4(screen_pos / viewport_size * 2.0 - 1.0, ndc.z, 1);
+
 				if (shade_depth_texture) {
 					float idx_color = float(INSTANCE_ID) / float(n_splats);
 					color = vec3(idx_color, 1.0 - idx_color, 0.0);
@@ -271,28 +296,13 @@ void vertex() {
 					vec3[16] sh = retrieve_spherical_harmonics_coef(index);
 					color = srgb_to_linear(computeColorFromSH(sh_degree, mu, vec3(VIEW_MATRIX[3].xyz), sh));
 				}
-				
-				vConic = conic;
-				
-				vec2 corner = VERTEX.xz;
-				vec2 screen_pos = point_image + radius_px * corner;
-				vUv = point_image - screen_pos;
-				POSITION = vec4(screen_pos / viewport_size * 2.0 - 1.0, ndc.z, 1);
 			}
 		}
 	}
 }
 
 void fragment() {
-	vec2 d = vUv;
-	vec3 conic = vConic;
-	float power = -0.5 * (conic.x * d.x * d.x + conic.z * d.y * d.y) + conic.y * d.x * d.y;
-	
-	if ((exp(power) > 0.04 && exp(power) < 0.05) || (exp(power) > 0.95 && exp(power) < 1.00)) {
-		ALBEDO = color.rgb;
-	} else {
-		discard;
-	}
+	ALBEDO = color.rgb;
 }
 
 //void light() {
