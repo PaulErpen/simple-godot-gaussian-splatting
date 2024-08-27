@@ -62,10 +62,23 @@ var data_image: Image
 var vertices_bytes
 
 func _ready():
+	get_viewport().size_changed.connect(_on_viewport_size_changed)
+
 	if ply_path != null:
 		load_header(ply_path)
 		load_gaussians(ply_path)
 		RenderingServer.call_on_render_thread(setup_sort_pipeline)
+
+func _on_viewport_size_changed():
+	var tan_fovy = tan(deg_to_rad(main_camera.fov) * 0.5)
+	var tan_fovx = tan_fovy * get_viewport().size.x / get_viewport().size.y
+	var focal_y = get_viewport().size.y / (2 * tan_fovy)
+	var focal_x = get_viewport().size.x / (2 * tan_fovx)
+	multi_mesh_instance.multimesh.mesh.material.set_shader_parameter("tan_fovx", tan_fovx)
+	multi_mesh_instance.multimesh.mesh.material.set_shader_parameter("tan_fovy", tan_fovy)
+	multi_mesh_instance.multimesh.mesh.material.set_shader_parameter("focal_x", focal_y)
+	multi_mesh_instance.multimesh.mesh.material.set_shader_parameter("focal_y", focal_x)
+	multi_mesh_instance.multimesh.mesh.material.set_shader_parameter("viewport_size", get_viewport().size)
 
 func setup_sort_pipeline():
 	# projection
