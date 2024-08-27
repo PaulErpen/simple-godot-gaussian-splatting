@@ -288,7 +288,7 @@ void fragment() {
 	vec3 conic = vConic;
 	float power = -0.5 * (conic.x * d.x * d.x + conic.z * d.y * d.y) + conic.y * d.x * d.y;
 	
-	if (exp(power) > 0.04 && exp(power) < 0.05) {
+	if ((exp(power) > 0.04 && exp(power) < 0.05) || (exp(power) > 0.95 && exp(power) < 1.00)) {
 		ALBEDO = color.rgb;
 	} else {
 		discard;
