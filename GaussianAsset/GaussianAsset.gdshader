@@ -2,6 +2,8 @@
 shader_type spatial;
 render_mode unshaded;
 
+const float sqrt_8 = sqrt(8.0);
+
 // splat data
 uniform sampler2D depth_index_sampler;
 uniform int n_splats;
@@ -86,10 +88,10 @@ mat3 computeCov3D(vec3 scale, vec4 rot) {
 	return Sigma;
 }
 
-vec3 computeCov2D(vec3 position, vec3 log_scale, vec4 rot, mat4 viewMatrix) {
+vec3 computeCov2D(vec3 position, vec3 log_scale, vec4 rot, mat4 modelViewMatrix) {
     mat3 cov3D = computeCov3D(log_scale, rot);
 
-    vec4 t = viewMatrix * vec4(position, 1.0);
+    vec4 t = modelViewMatrix * vec4(position, 1.0);
 
     // float limx = 1.3 * tan_fovx;
     // float limy = 1.3 * tan_fovy;
@@ -105,7 +107,7 @@ vec3 computeCov2D(vec3 position, vec3 log_scale, vec4 rot, mat4 viewMatrix) {
 		vec4(0.0, 0.0, 0.0, 0.0)
     );
 
-    mat4 W = transpose(viewMatrix);
+    mat4 W = transpose(modelViewMatrix);
 
     mat4 T = W * J;
 
@@ -116,10 +118,10 @@ vec3 computeCov2D(vec3 position, vec3 log_scale, vec4 rot, mat4 viewMatrix) {
         vec4(0.0, 0.0, 0.0, 0.0)
     );
 	
-    mat4 cov = transpose(T) * transpose(Vrk) * T;
+    mat4 cov = transpose(T) * Vrk * T;
 
-    cov[0][0] += 0.3;
-    cov[1][1] += 0.3;
+    //cov[0][0] += 0.3;
+    //cov[1][1] += 0.3;
     return vec3(cov[0][0], cov[0][1], cov[1][1]);
 }
 
@@ -247,7 +249,7 @@ void vertex() {
 			vec4 ndc = clipSpace / clipSpace.w;
 			
 			//conic of covariance calculation
-			vec3 cov2d = computeCov2D(mu, scale, rot, MODELVIEW_MATRIX);
+			vec3 cov2d = computeCov2D(mu, scale, rot, VIEW_MATRIX);
 			float det = cov2d.x * cov2d.z - cov2d.y * cov2d.y;
 			if (det == 0.) {
 				POSITION = vec4(0, 0, 2, 1);
@@ -275,25 +277,25 @@ void vertex() {
 				vec2 basis_viewport = 1.0 / vec2(viewport_size.x, viewport_size.y);
 				vec2 inverse_focal_adjustment = vec2(1.0 / focal_x, 1.0 / focal_y);
 				//vec2 ndc_offset = VERTEX.xz * basis_viewport * inverse_focal_adjustment * 2.0;
-				//vec2 ndc_offset = vec2(VERTEX.xz * basis_1 + VERTEX.xz * basis_2);
-				vec2 ndc_offset = vec2(0.0, 0.0);
+				vec2 ndc_offset = VERTEX.z * basis_1 + VERTEX.x * basis_2;
+				
+				//vec2 ndc_offset = vec2(0.0, 0.0);
+				//if(VERTEX.x == -1.0 && VERTEX.z == 1.0) {
+				//	ndc_offset = basis_1 - basis_2;
+				//} else if(VERTEX.x == 1.0 && VERTEX.z == 1.0) {
+				//	ndc_offset = basis_1 + basis_2;
+				//} else if(VERTEX.x == -1.0 && VERTEX.z == -1.0) {
+				//	ndc_offset = -basis_1 - basis_2;
+				//} else if(VERTEX.x == 1.0 && VERTEX.z == -1.0) {
+				//	ndc_offset = -basis_1 + basis_2;
+				//}
 
-				 if(VERTEX.x == -1.0 && VERTEX.z == 1.0) {
-				 	ndc_offset = basis_1 - basis_2;
-				 } else if(VERTEX.x == 1.0 && VERTEX.z == 1.0) {
-				 	ndc_offset = basis_1 + basis_2;
-				 } else if(VERTEX.x == -1.0 && VERTEX.z == -1.0) {
-				 	ndc_offset = -basis_1 - basis_2;
-				 } else if(VERTEX.x == 1.0 && VERTEX.z == -1.0) {
-				 	ndc_offset = -basis_1 + basis_2;
-				 }
-
-				 ndc_offset = ndc_offset * basis_viewport * 2.0 * sqrt(8.0);
+				ndc_offset = ndc_offset * basis_viewport * 2.0 * sqrt_8;
 
 				// compute pixel in image space
 				POSITION = vec4(ndc.xy + ndc_offset, ndc.z, 1);
 
-				vUv = VERTEX.xz;
+				vUv = VERTEX.xz * sqrt_8;
 
 				if (shade_depth_texture) {
 					float idx_color = float(INSTANCE_ID) / float(n_splats);
@@ -308,8 +310,17 @@ void vertex() {
 }
 
 void fragment() {
-	//ALBEDO = color.rgb;
-	ALBEDO = vec3(length(vUv)) * color.rgb;
+	float A = dot(vUv, vUv);
+	if (A > 8.0) discard;
+	float alpha = exp(-0.5 * A) * opacity;
+	
+	if (A > 7.0) {
+		ALPHA = 1.0;
+	} else {
+		ALPHA = alpha;
+	}
+
+	ALBEDO = color.rgb;
 }
 
 //void light() {
