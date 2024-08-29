@@ -102,7 +102,7 @@ vec3 computeCov2D(vec3 position, vec3 log_scale, vec4 rot, mat4 modelViewMatrix)
 
     mat4 J = mat4(
         vec4(focal_x / t.z, 0.0, -(focal_x * t.x) / (t.z * t.z), 0.0),
-        vec4(0.0, focal_y / t.z, -(focal_y * t.y) / (t.z * t.z), 0.0),
+        vec4(0.0, -focal_y / t.z, (focal_y * t.y) / (t.z * t.z), 0.0),
         vec4(0.0, 0.0, 0.0, 0.0),
 		vec4(0.0, 0.0, 0.0, 0.0)
     );
@@ -249,7 +249,7 @@ void vertex() {
 			vec4 ndc = clipSpace / clipSpace.w;
 			
 			//conic of covariance calculation
-			vec3 cov2d = computeCov2D(mu, scale, rot, VIEW_MATRIX);
+			vec3 cov2d = computeCov2D(mu, scale, rot, MODELVIEW_MATRIX);
 			float det = cov2d.x * cov2d.z - cov2d.y * cov2d.y;
 			if (det == 0.) {
 				POSITION = vec4(0, 0, 2, 1);
@@ -278,7 +278,7 @@ void vertex() {
 				vec2 inverse_focal_adjustment = vec2(1.0 / focal_x, 1.0 / focal_y);
 				vec2 ndc_offset = VERTEX.x * basis_1 + VERTEX.y * basis_2;
 				
-				ndc_offset = ndc_offset * 2.0 * sqrt_8;
+				ndc_offset = ndc_offset * 2.0 * sqrt_8 * basis_viewport;
 
 				// compute pixel in image space
 				POSITION = vec4(ndc.xy + ndc_offset, ndc.z, 1);
@@ -308,7 +308,7 @@ void fragment() {
 		ALPHA = alpha;
 	}
 
-	ALBEDO = vec3(color.r * vUv.x, color.g * vUv.y, color.b);
+	ALBEDO = color.rgb;
 }
 
 //void light() {
