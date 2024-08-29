@@ -266,7 +266,7 @@ void vertex() {
 				
 				
 				// compute the eigenvectors in image space
-				vec2 eigenvector_1 = normalize(vec2(cov2d.y, eigenValue1 - cov2d.x));
+				vec2 eigenvector_1 = normalize(vec2(b, eigenValue1 - a));
 				// since the eigen vectors are orthogonal, we derive the second one from the first
 				vec2 eigenvector_2 = vec2(eigenvector_1.y, -eigenvector_1.x);
 
@@ -276,26 +276,14 @@ void vertex() {
 
 				vec2 basis_viewport = 1.0 / vec2(viewport_size.x, viewport_size.y);
 				vec2 inverse_focal_adjustment = vec2(1.0 / focal_x, 1.0 / focal_y);
-				//vec2 ndc_offset = VERTEX.xz * basis_viewport * inverse_focal_adjustment * 2.0;
-				vec2 ndc_offset = VERTEX.z * basis_1 + VERTEX.x * basis_2;
+				vec2 ndc_offset = VERTEX.x * basis_1 + VERTEX.y * basis_2;
 				
-				//vec2 ndc_offset = vec2(0.0, 0.0);
-				//if(VERTEX.x == -1.0 && VERTEX.z == 1.0) {
-				//	ndc_offset = basis_1 - basis_2;
-				//} else if(VERTEX.x == 1.0 && VERTEX.z == 1.0) {
-				//	ndc_offset = basis_1 + basis_2;
-				//} else if(VERTEX.x == -1.0 && VERTEX.z == -1.0) {
-				//	ndc_offset = -basis_1 - basis_2;
-				//} else if(VERTEX.x == 1.0 && VERTEX.z == -1.0) {
-				//	ndc_offset = -basis_1 + basis_2;
-				//}
-
-				ndc_offset = ndc_offset * basis_viewport * 2.0 * sqrt_8;
+				ndc_offset = ndc_offset * 2.0 * sqrt_8;
 
 				// compute pixel in image space
 				POSITION = vec4(ndc.xy + ndc_offset, ndc.z, 1);
 
-				vUv = VERTEX.xz * sqrt_8;
+				vUv = VERTEX.xy * sqrt_8;
 
 				if (shade_depth_texture) {
 					float idx_color = float(INSTANCE_ID) / float(n_splats);
@@ -320,7 +308,7 @@ void fragment() {
 		ALPHA = alpha;
 	}
 
-	ALBEDO = color.rgb;
+	ALBEDO = vec3(color.r * vUv.x, color.g * vUv.y, color.b);
 }
 
 //void light() {

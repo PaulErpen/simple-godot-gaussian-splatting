@@ -9,6 +9,7 @@ extends Node3D
 @onready var main_camera = get_viewport().get_camera_3d()
 var last_direction
 @onready var rd = RenderingServer.get_rendering_device()
+@onready var gaussian_shader = load("res://GaussianAsset/gaussian_shader.tres").duplicate()
 
 var n_splats: int = 0
 var property_indices = Dictionary()
@@ -74,11 +75,11 @@ func _on_viewport_size_changed():
 	var tan_fovx = tan_fovy * get_viewport().size.x / get_viewport().size.y
 	var focal_y = get_viewport().size.y / (2 * tan_fovy)
 	var focal_x = get_viewport().size.x / (2 * tan_fovx)
-	multi_mesh_instance.multimesh.mesh.material.set_shader_parameter("tan_fovx", tan_fovx)
-	multi_mesh_instance.multimesh.mesh.material.set_shader_parameter("tan_fovy", tan_fovy)
-	multi_mesh_instance.multimesh.mesh.material.set_shader_parameter("focal_x", focal_y)
-	multi_mesh_instance.multimesh.mesh.material.set_shader_parameter("focal_y", focal_x)
-	multi_mesh_instance.multimesh.mesh.material.set_shader_parameter("viewport_size", get_viewport().size)
+	gaussian_shader.set_shader_parameter("tan_fovx", tan_fovx)
+	gaussian_shader.set_shader_parameter("tan_fovy", tan_fovy)
+	gaussian_shader.set_shader_parameter("focal_x", focal_y)
+	gaussian_shader.set_shader_parameter("focal_y", focal_x)
+	gaussian_shader.set_shader_parameter("viewport_size", get_viewport().size)
 
 func setup_sort_pipeline():
 	# projection
@@ -190,7 +191,7 @@ func setup_sort_pipeline():
 	depth_index_texture = Texture2DRD.new()
 	depth_index_texture.texture_rd_rid = depth_index_texture_rid
 	
-	multi_mesh_instance.multimesh.mesh.material.set_shader_parameter("depth_index_sampler", depth_index_texture)
+	gaussian_shader.set_shader_parameter("depth_index_sampler", depth_index_texture)
 	
 	var depth_index_uniform := RDUniform.new()
 	depth_index_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
@@ -301,6 +302,32 @@ func create_extended_image_texture(
 	)
 	return ImageTexture.create_from_image(image)
 
+func generate_plane_mesh() -> ArrayMesh:
+	var mesh = ArrayMesh.new()
+
+	# vertices
+	var vertices = PackedVector3Array()
+	vertices.push_back(Vector3(-1.0, -1.0, 0.0))
+	vertices.push_back(Vector3(-1.0, 1.0, 0.0))
+	vertices.push_back(Vector3(1.0, 1.0, 0.0))
+	vertices.push_back(Vector3(1.0, -1.0, 0.0))
+
+	# indices
+	var indices = PackedInt32Array([
+		0, 1, 2,
+		0, 2, 3
+	])
+
+	var arrays = []
+
+	arrays.resize(ArrayMesh.ARRAY_MAX)
+	arrays[ArrayMesh.ARRAY_VERTEX] = vertices
+	arrays[ArrayMesh.ARRAY_INDEX] = indices
+
+	# Create the Mesh
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
+
 func load_gaussians(path: String):
 	var ply_file = FileAccess.open(path, FileAccess.READ)
 	var current_line = ply_file.get_line()
@@ -395,9 +422,9 @@ func load_gaussians(path: String):
 	var multi_mesh = MultiMesh.new()
 	multi_mesh.transform_format = MultiMesh.TRANSFORM_3D
 	multi_mesh.instance_count = n_splats
-	var plane_mesh = PlaneMesh.new()
-	plane_mesh.material = load("res://GaussianAsset/gaussian_shader.tres").duplicate()
-	multi_mesh.mesh = plane_mesh
+	var mesh = generate_plane_mesh()
+	RenderingServer.mesh_surface_set_material(mesh.get_rid(), 0, gaussian_shader.get_rid())
+	multi_mesh.mesh = mesh
 	
 	multi_mesh_instance.multimesh = multi_mesh
 	
@@ -430,41 +457,41 @@ func load_gaussians(path: String):
 	multi_mesh.visible_instance_count = n_splats
 	ply_file.close()
 	
-	multi_mesh.mesh.material.set_shader_parameter("means_sampler", means_image_texture)
-	multi_mesh.mesh.material.set_shader_parameter("dc_sampler", dc_image_texture)
-	multi_mesh.mesh.material.set_shader_parameter("sh1_1_sampler", sh1_1_image_texture)
-	multi_mesh.mesh.material.set_shader_parameter("sh1_2_sampler", sh1_2_image_texture)
-	multi_mesh.mesh.material.set_shader_parameter("sh1_3_sampler", sh1_3_image_texture)
-	multi_mesh.mesh.material.set_shader_parameter("sh2_1_sampler", sh2_1_image_texture)
-	multi_mesh.mesh.material.set_shader_parameter("sh2_2_sampler", sh2_2_image_texture)
-	multi_mesh.mesh.material.set_shader_parameter("sh2_3_sampler", sh2_3_image_texture)
-	multi_mesh.mesh.material.set_shader_parameter("sh2_4_sampler", sh2_4_image_texture)
-	multi_mesh.mesh.material.set_shader_parameter("sh2_5_sampler", sh2_5_image_texture)
-	multi_mesh.mesh.material.set_shader_parameter("sh3_1_sampler", sh3_1_image_texture)
-	multi_mesh.mesh.material.set_shader_parameter("sh3_2_sampler", sh3_2_image_texture)
-	multi_mesh.mesh.material.set_shader_parameter("sh3_3_sampler", sh3_3_image_texture)
-	multi_mesh.mesh.material.set_shader_parameter("sh3_4_sampler", sh3_4_image_texture)
-	multi_mesh.mesh.material.set_shader_parameter("sh3_5_sampler", sh3_5_image_texture)
-	multi_mesh.mesh.material.set_shader_parameter("sh3_6_sampler", sh3_6_image_texture)
-	multi_mesh.mesh.material.set_shader_parameter("sh3_7_sampler", sh3_7_image_texture)
-	multi_mesh.mesh.material.set_shader_parameter("opa_scale_sampler", opa_scale_image_texture)
-	multi_mesh.mesh.material.set_shader_parameter("rot_sampler", rot_image_texture)
-	multi_mesh.mesh.material.set_shader_parameter("sh_sampler", sh_texture)
-	multi_mesh.mesh.material.set_shader_parameter("n_splats", n_splats)
-	multi_mesh.mesh.material.set_shader_parameter("texture_size", texture_size)
-	multi_mesh.mesh.material.set_shader_parameter("modifier", 1.0)
-	multi_mesh.mesh.material.set_shader_parameter("shade_depth_texture", false)
-	multi_mesh.mesh.material.set_shader_parameter("near_cull_distance", near_cull_distance)
+	gaussian_shader.set_shader_parameter("means_sampler", means_image_texture)
+	gaussian_shader.set_shader_parameter("dc_sampler", dc_image_texture)
+	gaussian_shader.set_shader_parameter("sh1_1_sampler", sh1_1_image_texture)
+	gaussian_shader.set_shader_parameter("sh1_2_sampler", sh1_2_image_texture)
+	gaussian_shader.set_shader_parameter("sh1_3_sampler", sh1_3_image_texture)
+	gaussian_shader.set_shader_parameter("sh2_1_sampler", sh2_1_image_texture)
+	gaussian_shader.set_shader_parameter("sh2_2_sampler", sh2_2_image_texture)
+	gaussian_shader.set_shader_parameter("sh2_3_sampler", sh2_3_image_texture)
+	gaussian_shader.set_shader_parameter("sh2_4_sampler", sh2_4_image_texture)
+	gaussian_shader.set_shader_parameter("sh2_5_sampler", sh2_5_image_texture)
+	gaussian_shader.set_shader_parameter("sh3_1_sampler", sh3_1_image_texture)
+	gaussian_shader.set_shader_parameter("sh3_2_sampler", sh3_2_image_texture)
+	gaussian_shader.set_shader_parameter("sh3_3_sampler", sh3_3_image_texture)
+	gaussian_shader.set_shader_parameter("sh3_4_sampler", sh3_4_image_texture)
+	gaussian_shader.set_shader_parameter("sh3_5_sampler", sh3_5_image_texture)
+	gaussian_shader.set_shader_parameter("sh3_6_sampler", sh3_6_image_texture)
+	gaussian_shader.set_shader_parameter("sh3_7_sampler", sh3_7_image_texture)
+	gaussian_shader.set_shader_parameter("opa_scale_sampler", opa_scale_image_texture)
+	gaussian_shader.set_shader_parameter("rot_sampler", rot_image_texture)
+	gaussian_shader.set_shader_parameter("sh_sampler", sh_texture)
+	gaussian_shader.set_shader_parameter("n_splats", n_splats)
+	gaussian_shader.set_shader_parameter("texture_size", texture_size)
+	gaussian_shader.set_shader_parameter("modifier", 1.0)
+	gaussian_shader.set_shader_parameter("shade_depth_texture", false)
+	gaussian_shader.set_shader_parameter("near_cull_distance", near_cull_distance)
 	
 	var tan_fovy = tan(deg_to_rad(main_camera.fov) * 0.5)
 	var tan_fovx = tan_fovy * get_viewport().size.x / get_viewport().size.y
 	var focal_y = get_viewport().size.y / (2 * tan_fovy)
 	var focal_x = get_viewport().size.x / (2 * tan_fovx)
-	multi_mesh.mesh.material.set_shader_parameter("tan_fovx", tan_fovx)
-	multi_mesh.mesh.material.set_shader_parameter("tan_fovy", tan_fovy)
-	multi_mesh.mesh.material.set_shader_parameter("focal_x", focal_y)
-	multi_mesh.mesh.material.set_shader_parameter("focal_y", focal_x)
-	multi_mesh.mesh.material.set_shader_parameter("viewport_size", get_viewport().size)
+	gaussian_shader.set_shader_parameter("tan_fovx", tan_fovx)
+	gaussian_shader.set_shader_parameter("tan_fovy", tan_fovy)
+	gaussian_shader.set_shader_parameter("focal_x", focal_y)
+	gaussian_shader.set_shader_parameter("focal_y", focal_x)
+	gaussian_shader.set_shader_parameter("viewport_size", get_viewport().size)
 	print("Finished Loading Gaussian Asset")
 
 func get_model_view_matrix() -> Transform3D:
