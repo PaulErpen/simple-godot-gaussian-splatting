@@ -93,13 +93,6 @@ vec3 computeCov2D(vec3 position, vec3 log_scale, vec4 rot, mat4 modelViewMatrix)
 
     vec4 t = modelViewMatrix * vec4(position, 1.0);
 
-    // float limx = 1.3 * tan_fovx;
-    // float limy = 1.3 * tan_fovy;
-    // float txtz = t.x / t.z;
-    // float tytz = t.y / t.z;
-    // t.x = min(limx, max(-limx, txtz)) * t.z;
-    // t.y = min(limy, max(-limy, tytz)) * t.z;
-
     mat4 J = mat4(
         vec4(focal_x / t.z, 0.0, -(focal_x * t.x) / (t.z * t.z), 0.0),
         vec4(0.0, -focal_y / t.z, (focal_y * t.y) / (t.z * t.z), 0.0),
@@ -120,8 +113,6 @@ vec3 computeCov2D(vec3 position, vec3 log_scale, vec4 rot, mat4 modelViewMatrix)
 	
     mat4 cov = transpose(T) * Vrk * T;
 
-    //cov[0][0] += 0.3;
-    //cov[1][1] += 0.3;
     return vec3(cov[0][0], cov[0][1], cov[1][1]);
 }
 
@@ -302,13 +293,8 @@ void fragment() {
 	if (A > 8.0) discard;
 	float alpha = exp(-0.5 * A) * opacity;
 	
-	if (A > 7.0) {
-		ALPHA = 1.0;
-	} else {
-		ALPHA = alpha;
-	}
-
 	ALBEDO = color.rgb;
+	ALPHA = alpha;
 }
 
 //void light() {
