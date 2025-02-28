@@ -47,6 +47,7 @@ layout (location = 2) out vec2 vUV;
 layout (location = 3) out vec3 vConic;
 layout (location = 4) out float opacity;
 layout (location = 5) flat out uint vpoint_cloud_mode;
+layout (location = 6) flat out float v_modifier;
 
 const float SH_C0 = 0.28209479177387814;
 const float SH_C1 = 0.4886025119029199;
@@ -234,6 +235,7 @@ void main() {
     gl_Position = vec4(screen_pos / params.viewport_size * 2 - 1, 0, 1);
 
     vpoint_cloud_mode = point_cloud_mode;
+    v_modifier = params.modifier;
 }
 
 #[fragment]
@@ -244,6 +246,7 @@ layout (location = 2) in vec2 vUV;
 layout (location = 3) in vec3 vConic;
 layout (location = 4) in float opacity;
 layout (location = 5) flat in uint point_cloud_mode;
+layout (location = 6) flat in float v_modifier;
 layout (location = 0) out vec4 frag_color;
 
 void main() {
@@ -252,7 +255,7 @@ void main() {
 	float power = -0.5 * (conic.x * d.x * d.x + conic.z * d.y * d.y) + conic.y * d.x * d.y;
 
     if (point_cloud_mode == 1) {
-        if (length(d) > 1.0) {
+        if (length(d) > v_modifier) {
 		    discard;
         }
 

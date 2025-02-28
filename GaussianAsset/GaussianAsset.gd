@@ -375,7 +375,7 @@ func get_model_view_matrix() -> Transform3D:
 	return view_matrix * model_matrix
 
 func update_params_buffer():
-	var tan_fovy = tan(deg_to_rad($Camera.fov) * 0.5)
+	var tan_fovy = tan(deg_to_rad(get_parent().get_node("Camera3D").fov) * 0.5)
 	var tan_fovx = tan_fovy * get_viewport().size.x / get_viewport().size.y
 	var focal_y = get_viewport().size.y / (2 * tan_fovy)
 	var focal_x = get_viewport().size.x / (2 * tan_fovx)
@@ -388,7 +388,7 @@ func update_params_buffer():
 		tan_fovy,
 		focal_x,
 		focal_y,
-		sh_degree,
+		min(sh_degree, max_sh_degree),
 		modifier
 	]).to_byte_array()
 	rd.buffer_update(params_buffer, 0, params.size(), params)
@@ -425,6 +425,7 @@ func sort():
 
 func render():
 	update_camera_buffers()
+	update_params_buffer()
 	
 	var draw_list := rd.draw_list_begin(framebuffer, 
 		RenderingDevice.INITIAL_ACTION_CLEAR, 
@@ -453,3 +454,9 @@ func render():
 	assert(byte_data.size() == image_size.x * image_size.y * 4 * 4)
 	
 	volume.mesh.material.set_shader_parameter("rendered_image_texture", rendered_image_texture)
+
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("scroll_up"):
+		modifier = clamp(modifier + 0.1, 0.0, 10.0)
+	if event.is_action_pressed("scroll_down"):
+		modifier = clamp(modifier - 0.1, 0.0, 10.0)
