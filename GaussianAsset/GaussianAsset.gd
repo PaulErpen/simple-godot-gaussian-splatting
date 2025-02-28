@@ -403,16 +403,16 @@ func sort():
 	var projection_threads_per_workgroup = max(1, n_splats / 256 + 1)
 	var compute_list := rd.compute_list_begin()
 	rd.compute_list_bind_compute_pipeline(compute_list, projection_pipeline)
-	var push_constants_depth = PackedInt32Array([n_splats, 0])
-	rd.compute_list_set_push_constant(compute_list, push_constants_depth.to_byte_array(), push_constants_depth.size() * 8)
+	var push_constants_depth = PackedInt32Array([n_splats, 0, 0, 0])
+	rd.compute_list_set_push_constant(compute_list, push_constants_depth.to_byte_array(), push_constants_depth.size() * 4)
 	rd.compute_list_bind_uniform_set(compute_list, projection_uniform_set, 0)
 	rd.compute_list_dispatch(compute_list, projection_threads_per_workgroup, 1, 1)
 	
 	rd.compute_list_add_barrier(compute_list)
 	
 	rd.compute_list_bind_compute_pipeline(compute_list, sort_pipeline)
-	var push_constants_sort = PackedInt32Array([n_splats, 0])
-	rd.compute_list_set_push_constant(compute_list, push_constants_sort.to_byte_array(), push_constants_sort.size() * 8)
+	var push_constants_sort = PackedInt32Array([n_splats, 0, 0, 0])
+	rd.compute_list_set_push_constant(compute_list, push_constants_sort.to_byte_array(), push_constants_sort.size() * 4)
 	rd.compute_list_bind_uniform_set(compute_list, sort_uniform_set, 0)
 	rd.compute_list_dispatch(compute_list, 1, 1, 1)
 	rd.compute_list_add_barrier(compute_list)
@@ -441,7 +441,7 @@ func render():
 	])
 	rd.draw_list_set_push_constant(draw_list, push_constants.to_byte_array(), push_constants.size() * 4)
 	rd.draw_list_draw(draw_list, false, n_splats)
-	rd.draw_list_end(RenderingDevice.BARRIER_MASK_VERTEX)
+	rd.draw_list_end()
 	
 	var byte_data := rd.texture_get_data(output_texture, 0)
 	var image_size = get_viewport().size

@@ -12,10 +12,6 @@
 
 layout (local_size_x = WORKGROUP_SIZE) in;
 
-layout (push_constant, std430) uniform PushConstants {
-    uint num_elements;
-};
-
 layout (set = 0, binding = 0) buffer elements_in {
     uint index_in[];
 };
@@ -26,6 +22,10 @@ layout (set = 0, binding = 1) buffer elements_out {
 
 layout(set = 0, binding = 2) buffer DepthBuffer {
     float depths[];
+};
+
+layout (push_constant, std430) uniform PushConstants {
+    uint num_elements;
 };
 
 shared uint[RADIX_SORT_BINS] histogram;
