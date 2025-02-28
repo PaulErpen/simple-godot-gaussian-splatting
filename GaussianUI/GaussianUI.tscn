@@ -59,6 +59,11 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "Show Depth"
 
+[node name="PCMODE" type="CheckBox" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Point-cloud Mode"
+
 [node name="TriggerSortButton" type="Button" parent="PanelContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
@@ -66,4 +71,5 @@ text = "Trigger Sort"
 
 [connection signal="toggled" from="PanelContainer/VBoxContainer/AABB" to="." method="_on_aabb_toggled"]
 [connection signal="toggled" from="PanelContainer/VBoxContainer/Depth" to="." method="_on_depth_toggled"]
+[connection signal="toggled" from="PanelContainer/VBoxContainer/PCMODE" to="." method="_on_pcmode_toggled"]
 [connection signal="pressed" from="PanelContainer/VBoxContainer/TriggerSortButton" to="." method="_on_trigger_sort_button_pressed"]

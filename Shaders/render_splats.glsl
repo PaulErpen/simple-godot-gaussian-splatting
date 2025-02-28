@@ -38,6 +38,7 @@ layout(set = 0, binding = 4) buffer ModelView {
 layout (push_constant, std430) uniform PushConstants {
     uint n_splats;
     uint shade_depth_texture;
+    uint point_cloud_mode;
 };
 
 //varyings
@@ -45,6 +46,7 @@ layout (location = 1) out vec3 color;
 layout (location = 2) out vec2 vUV;
 layout (location = 3) out vec3 vConic;
 layout (location = 4) out float opacity;
+layout (location = 5) flat out uint vpoint_cloud_mode;
 
 const float SH_C0 = 0.28209479177387814;
 const float SH_C1 = 0.4886025119029199;
@@ -230,6 +232,8 @@ void main() {
     vec2 screen_pos = point_image + radius_px * vertex_position.xy;
     vUV = point_image - screen_pos;
     gl_Position = vec4(screen_pos / params.viewport_size * 2 - 1, 0, 1);
+
+    vpoint_cloud_mode = point_cloud_mode;
 }
 
 #[fragment]
@@ -239,23 +243,32 @@ layout (location = 1) in vec3 color;
 layout (location = 2) in vec2 vUV;
 layout (location = 3) in vec3 vConic;
 layout (location = 4) in float opacity;
+layout (location = 5) flat in uint point_cloud_mode;
 layout (location = 0) out vec4 frag_color;
 
 void main() {
 	vec2 d = vUV;
 	vec3 conic = vConic;
 	float power = -0.5 * (conic.x * d.x * d.x + conic.z * d.y * d.y) + conic.y * d.x * d.y;
-	
-	if (power > 0.0) {
-		discard;
-	}
 
-	float alpha = min(0.99, opacity * exp(power));
-	
-	if (alpha < 1.0/255.0) {
-		discard;
-	}
+    if (point_cloud_mode == 1) {
+        if (length(d) > 1.0) {
+		    discard;
+        }
 
-	frag_color = vec4(color.rgb * alpha, alpha);
+        frag_color = vec4(color.rgb, 1.0);
+    } else {
+        if (power > 0.0) {
+		    discard;
+        }
+
+        float alpha = min(0.99, opacity * exp(power));
+        
+        if (alpha < 1.0/255.0) {
+            discard;
+        }
+
+        frag_color = vec4(color.rgb * alpha, alpha);
+    }
 }
 

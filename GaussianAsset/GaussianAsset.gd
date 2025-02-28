@@ -15,6 +15,7 @@ var vertices: PackedFloat32Array
 var n_properties: int
 var sh_degree: int
 var shade_depth_texture: bool = false
+var pcmode: bool = false
 var modifier = 1.0
 
 # Pipeline
@@ -437,7 +438,7 @@ func render():
 	var push_constants = PackedInt32Array([
 		n_splats, 
 		1 if shade_depth_texture else 0,  
-		0,
+		1 if pcmode else 0,
 		0
 	])
 	rd.draw_list_set_push_constant(draw_list, push_constants.to_byte_array(), push_constants.size() * 4)

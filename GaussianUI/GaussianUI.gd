@@ -6,6 +6,7 @@ var show_aabb: bool = false
 
 @onready var aabb_checkbox = $PanelContainer/VBoxContainer/AABB
 @onready var depth_checkbox = $PanelContainer/VBoxContainer/Depth
+@onready var pc_mode_checkbox = $PanelContainer/VBoxContainer/PCMODE
 
 func _on_aabb_toggled(toggled_on):
 	if targets != null:
@@ -23,3 +24,10 @@ func _on_trigger_sort_button_pressed():
 	if targets != null:
 		for target in targets:
 			target.sort()
+
+
+func _on_pcmode_toggled(toggled_on: bool) -> void:
+	if targets != null:
+		for target in targets:
+			target.pcmode = toggled_on
+	pc_mode_checkbox.release_focus()
