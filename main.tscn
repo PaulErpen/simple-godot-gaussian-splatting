@@ -4,12 +4,14 @@
 [ext_resource type="Script" path="res://Camera3D.gd" id="1_ubcp1"]
 [ext_resource type="PackedScene" uid="uid://16qg5k874q3d" path="res://GaussianUI/GaussianUI.tscn" id="3_3i21k"]
 
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_8an1y"]
-sky_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
-ground_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_t587v"]
+sky_top_color = Color(1, 1, 1, 1)
+sky_horizon_color = Color(1, 1, 1, 1)
+ground_bottom_color = Color(1, 1, 1, 1)
+ground_horizon_color = Color(1, 1, 1, 1)
 
 [sub_resource type="Sky" id="Sky_sjojc"]
-sky_material = SubResource("ProceduralSkyMaterial_8an1y")
+sky_material = SubResource("ProceduralSkyMaterial_t587v")
 
 [sub_resource type="Environment" id="Environment_jes72"]
 background_mode = 2
@@ -36,17 +38,21 @@ script = ExtResource("1_ubcp1")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.05761, 0, 0)
+visible = false
 mesh = SubResource("CapsuleMesh_5ggwy")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.965926, -1.13133e-08, 0.258819, -0.258819, -4.2222e-08, 0.965926, 0, -1, -4.37114e-08, 4, 3.24336, 0)
+visible = false
 
 [node name="GaussianAsset" parent="." instance=ExtResource("1_2yj05")]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 1.65766, 0.458609, -3.67995)
+max_sh_degree = 0
 max_vertices = 16385
 
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
 transform = Transform3D(10, 0, 0, 0, 10, 0, 0, 0, 10, 0, 0, 0)
+visible = false
 mesh = SubResource("PlaneMesh_8wlq3")
 
 [node name="GaussianUi" parent="." node_paths=PackedStringArray("targets") instance=ExtResource("3_3i21k")]

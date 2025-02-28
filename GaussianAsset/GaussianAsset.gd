@@ -1,6 +1,7 @@
 # Adapted from: https://github.com/LightningStorm0/Godot-Gaussian-Splatting/blob/main/GaussianLoader.gd
 extends Node3D
 
+@export var max_sh_degree: int = 3
 @export var ply_path: String = "res://ply_files/lego.ply"
 @export var max_vertices: int = 16384 ** 2
 @onready var main_camera = get_viewport().get_camera_3d()
@@ -260,7 +261,7 @@ func setup_render_pipeline():
 		tan_fovy,
 		focal_x,
 		focal_y,
-		sh_degree,
+		min(sh_degree, max_sh_degree),
 		modifier
 	]).to_byte_array()
 	params_buffer = rd.storage_buffer_create(params.size(), params)
